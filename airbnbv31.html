@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalles del Hotel - Guacamayafly</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Custom Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'guacamayafly-green': '#00c897',
+                        'guacamayafly-dark-green': '#00b386',
+                        'guacamayafly-orange': '#FF7F00',
+                        'guacamayafly-dark-orange': '#E67300',
+                        'brand-green': '#00a680',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Favicon y Fonts -->
+    <link rel="shortcut icon" type="image/x-icon" href="https://guacamayafly.github.io/public/assets/img/logo-6.svg" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+    <!-- Estilos Globales y de Componentes -->
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Poppins', sans-serif; color: #1a203c; }
+        body.overflow-hidden { overflow: hidden; }
+        .interactive-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .interactive-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .rating-dots span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #e0e0e0; margin-right: 2px; }
+        .rating-dots span.filled { background-color: #00a680; }
+        .carousel-container { position: relative; }
+        .carousel-nav-button { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(255, 255, 255, 0.9); border-radius: 9999px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1a203c; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s ease-in-out; z-index: 10; cursor: pointer; }
+        .carousel-nav-button:hover { background-color: white; transform: translateY(-50%) scale(1.1); }
+        .carousel-nav-button.left { left: -22px; }
+        .carousel-nav-button.right { right: -22px; }
+        @media (max-width: 767px) { .carousel-nav-button { display: none; } }
+        .carousel-content-wrapper { 
+            display: flex; 
+            overflow-x: auto; 
+            scroll-snap-type: x mandatory; 
+            -webkit-overflow-scrolling: touch; 
+            scrollbar-width: none; 
+            padding-bottom: 1rem; 
+            position: relative;
+        }
+        .carousel-content-wrapper::-webkit-scrollbar { display: none; }
+        .carousel-content-wrapper > * { scroll-snap-align: start; flex-shrink: 0; }
+        .back-button { display: flex; align-items: center; gap: 0.5rem; color: #4a5568; font-weight: 500; transition: color 0.2s; }
+        .back-button:hover { color: #1a203c; }
+        .action-icon { background-color: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s; }
+        .action-icon:hover { background-color: #f7fafc; transform: scale(1.05); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .accordion-content.open { max-height: 1000px; }
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        .heartbeat-animation { animation: heartbeat 1.5s infinite ease-in-out; }
+        
+        @keyframes hop {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-4px) scale(1.03); }
+        }
+        .hop-animation {
+            animation: hop 0.6s ease-out;
+        }
+        .initial-hop-animation {
+            animation: hop 1.2s ease-in-out 2; 
+            animation-delay: 0.5s;
+        }
+
+        .sticky-nav {
+            position: sticky;
+            z-index: 30;
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .sticky-nav a {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            color: #4a5568;
+            transition: color 0.2s, border-bottom-color 0.2s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+        .sticky-nav a.active {
+            color: #1a203c;
+            border-bottom-color: #00a680;
+        }
+        .sticky-footer-mobile {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #e5e7eb;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 40;
+        }
+        .faq-item-header, .review-item-header { 
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faq-item-body, .review-item-body { 
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+        .faq-item-body.open, .review-item-body.open { 
+            max-height: 500px;
+        }
+        .faq-arrow, .review-arrow { 
+            transition: transform 0.4s ease;
+        }
+        .faq-arrow.rotated, .review-arrow.rotated { 
+            transform: rotate(180deg);
+        }
+
+        .popover-modal { position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 320px; background-color: white; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 6000; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; }
+        .popover-modal.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        .popover-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .counter-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #d1d5db; display: flex; align-items: center; justify-content: center; cursor: pointer; background-color: white; color: #4b5563; font-size: 1.25rem; }
+        .counter-btn:disabled { cursor: not-allowed; background-color: #f3f4f6; color: #9ca3af; }
+
+        .calendar-modal .modal-container {
+            padding: 0;
+            max-height: 90vh;
+            overflow: hidden;
+            max-width: 400px;
+        }
+        .calendar-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .calendar-modal-top-info {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+        }
+        .info-box {
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            flex: 1;
+        }
+        .info-box span {
+            display: block;
+        }
+        .info-box .label {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .info-box .value {
+            font-weight: 600;
+        }
+        .calendar-modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .calendar-modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: white;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        .price-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+        .price-legend > div { display: flex; align-items: center; gap: 0.5rem; }
+        .price-legend .color-box { width: 1rem; height: 1rem; border-radius: 0.25rem; }
+        .quick-select-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .quick-select-buttons button {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .quick-select-buttons button:hover { background-color: #f3f4f6; }
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .calendar-months { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+        @media (min-width: 768px) { .calendar-months { grid-template-columns: 1fr 1fr; } }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; place-items: center; }
+        .calendar-day { width: 38px; height: 38px; display: flex; justify-content: center; align-items: center; border-radius: 50%; cursor: pointer; transition: all 0.2s; }
+        .calendar-day.weekday { font-weight: 600; font-size: 0.8rem; color: #4a5568; cursor: default; }
+        .calendar-day.disabled { color: #cbd5e0; cursor: not-allowed; text-decoration: line-through; }
+        .calendar-day:not(.disabled):not(.weekday):hover { background-color: #f0f0f0; }
+        .calendar-day.price-cheap { background-color: #d1fae5; color: #065f46; }
+        .calendar-day.price-medium { background-color: #fef3c7; color: #92400e; }
+        .calendar-day.price-expensive { background-color: #fee2e2; color: #991b1b; }
+        .calendar-day.selected { background-color: #00a680 !important; color: white !important; font-weight: bold; }
+        .calendar-day.in-range { background-color: #e6f7f3; border-radius: 0; }
+        .calendar-day.range-start { border-top-left-radius: 50%; border-bottom-left-radius: 50%; }
+        .calendar-day.range-end { border-top-right-radius: 50%; border-bottom-right-radius: 50%; }
+        
+        .payment-option { border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease; }
+        .payment-option:hover { border-color: #FF7F00; background-color: #fff7ed; }
+        .payment-option.selected { border-color: #FF7F00; background-color: #fff7ed; box-shadow: 0 0 0 2px #FF7F00; }
+        .payment-logo { height: 24px; }
+        .payment-info-popup { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2d3748; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 11000; opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
+        .payment-info-popup.show { opacity: 1; transform: translateX(-50%) translateY(-10px); pointer-events: auto; }
+
+        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
+        .notification-popup { background-color: #ef4444; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateX(120%); transition: transform 0.5s ease-in-out; margin-top: 10px; }
+        .notification-popup.show { transform: translateX(0); }
+        
+        /* --- MODAL STYLES --- */
+        .modal-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background-color: rgba(0,0,0,0.6); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; /* Default for desktop */
+            z-index: 5000; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease; 
+        }
+        .modal-overlay.visible { 
+            opacity: 1; 
+            pointer-events: auto; 
+        }
+        .modal-container { 
+            background-color: white; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            width: 90%; 
+            max-width: 700px; 
+            transform: scale(0.95); 
+            transition: transform 0.3s ease; 
+            display: flex; 
+            flex-direction: column; 
+            max-height: 90vh; 
+            border-radius: 0.75rem;
+        }
+        .modal-overlay.visible .modal-container { 
+            transform: scale(1); 
+        }
+        .modal-header { 
+            padding: 1rem 1.5rem; 
+            border-bottom: 1px solid #e2e8f0; 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0;
+        }
+        .modal-header .close-btn { 
+            position: absolute; 
+            left: 1.5rem; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: #f1f2f3; 
+            border-radius: 50%; 
+            width: 32px; 
+            height: 32px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            border: none;
+        }
+        .modal-body { 
+            padding: 1.5rem; 
+            overflow-y: auto; 
+            flex-grow: 1;
+        }
+
+        /* Responsive Modal Styles for Mobile */
+        @media (max-width: 767px) {
+            .modal-overlay {
+                align-items: flex-end; /* Align modal to the bottom for mobile */
+            }
+            .modal-container {
+                transform: translateY(100%);
+                transition: transform 0.4s ease-out;
+            }
+            .modal-overlay.visible .modal-container {
+                 transform: translateY(0);
+            }
+            /* Specific styles for the amenities modal on mobile */
+            #amenities-modal .modal-container, #rules-modal .modal-container, #safety-modal .modal-container, #cancellation-modal .modal-container {
+                width: 100%;
+                max-width: 100%;
+                height: calc(100% - 40px); /* Almost full height */
+                max-height: calc(100% - 40px);
+                border-radius: 1rem 1rem 0 0;
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+            }
+             #amenities-modal .modal-header, #rules-modal .modal-header, #safety-modal .modal-header, #cancellation-modal .modal-header {
+                padding-top: 1.5rem; /* Space for grabber */
+            }
+            /* Full screen modal for reviews on mobile */
+            #reviews-modal .modal-container {
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+            #reviews-modal .modal-header {
+                justify-content: flex-start;
+                gap: 1rem;
+            }
+             #reviews-modal .modal-header .close-btn {
+                position: static;
+                transform: none;
+             }
+        }
+
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 1s ease-out; }
+        .loader-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loader-plane { font-size: 4rem; color: #FF7F00; animation: fly-across 3s infinite ease-in-out; }
+        @keyframes fly-across { 0% { transform: translateX(-100vw); } 50% { transform: translateX(0); } 100% { transform: translateX(100vw); } }
+
+        .saved-result-bar {
+            background-color: #e6f7f3;
+            color: #00a680;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .saved-result-bar.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .saved-result-bar i {
+            margin-right: 0.5rem;
+        }
+        .saved-result-bar button {
+            background-color: #00a680;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        .saved-result-bar button:hover {
+            background-color: #008f6b;
+        }
+        
+        .attribute-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #374151;
+            background-color: white;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .attribute-pill:hover {
+            background-color: #f9fafb;
+        }
+        .attribute-pill i {
+            color: #4b5563;
+        }
+        .review-text-clamp {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+        /* Utility to hide scrollbar */
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+    </style>
+</head>
+<body class="bg-white md:bg-gray-50 pb-24 md:pb-0">
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="fixed top-0 left-0 h-full w-4/5 max-w-sm bg-white shadow-lg p-6 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center space-x-2">
+                <img alt="Logo Guacamayafly" height="32" src="https://guacamayafly.github.io/public/assets/img/logo-6.svg" width="32">
+                <span class="font-extrabold text-lg select-none text-guacamayafly-orange">GUACAMAYAFLY</span>
+            </div>
+            <button id="close-mobile-menu" class="text-2xl">&times;</button>
+        </div>
+        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-2 font-semibold mb-4" type="button">Iniciar sesión</button>
+        <nav class="flex flex-col space-y-4">
+            <a href="#" class="text-gray-700 hover:text-guacamayafly-orange">Escribe una opinión</a>
+            <a href="#" class="text-gray-700 hover:text-guacamayafly-orange">Viajes</a>
+            <hr>
+            <h3 class="font-semibold text-gray-500 uppercase text-sm pt-2">Categorías</h3>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-building w-5"></i> Hoteles</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-star w-5"></i> Cosas que hacer</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-utensils w-5"></i> Restaurantes</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-plane w-5"></i> Vuelos</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-house-user w-5"></i> Alquileres vacacionales</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-ship w-5"></i> Cruceros</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="fas fa-car w-5"></i> Coches de alquiler</a>
+            <a href="#" class="flex items-center gap-3 text-gray-700 hover:text-guacamayafly-orange"><i class="far fa-comments w-5"></i> Foros</a>
+        </nav>
+    </div>
+
+    <!-- Pop-up de Sitio en Desarrollo -->
+    <div id="development-popup-overlay" class="modal-overlay hidden" style="z-index: 12000;">
+        <div class="modal-container bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <div class="text-yellow-500 mb-4">
+                <i class="fas fa-exclamation-triangle fa-3x"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Sitio Web en Desarrollo</h2>
+            <p class="text-gray-600 mb-6">
+                Los precios mostrados son de prueba y este sitio web está actualmente en desarrollo. Por favor, consulte con un agente antes de realizar cualquier pago o reserva.
+            </p>
+            <button id="development-popup-close" class="bg-blue-600 text-white font-semibold px-8 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- Elementos de UI: Notificaciones, Loader, Modales -->
+    <div id="notification-container"></div>
+    <div id="loader" class="loader-overlay"><i class="fas fa-plane loader-plane"></i></div>
+
+    <!-- Modal del Calendario Principal (para selección de fechas de hotel) -->
+    <div id="calendar-modal" class="modal-overlay hidden calendar-modal">
+        <div class="modal-container">
+            <div class="calendar-modal-header">
+                 <h3 class="font-semibold text-lg">Selecciona fechas</h3>
+                 <button class="modal-close-btn p-2 rounded-full hover:bg-gray-200 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="calendar-modal-top-info">
+                <div class="info-box">
+                    <span class="label">Check-in</span>
+                    <span id="calendar-checkin-display" class="value">--</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Check-out</span>
+                    <span id="calendar-checkout-display" class="value">--</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Huéspedes</span>
+                    <span id="calendar-guests-display" class="value">--</span>
+                </div>
+            </div>
+            <div class="calendar-modal-body">
+                <div class="flex items-center gap-2 text-sm text-gray-700 mb-4">
+                    <i class="far fa-calendar-alt"></i>
+                    <p>Selecciona fechas para encontrar los mejores precios para tu viaje</p>
+                </div>
+                <div class="calendar-header">
+                    <button id="prev-month" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                    <h4 id="calendar-month-year" class="font-semibold text-lg"></h4>
+                    <button id="next-month" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-months" id="calendar-months-container"></div>
+                <div class="price-legend">
+                    <div><div class="color-box" style="background-color: #d1fae5;"></div><span>Más barato</span></div>
+                    <div><div class="color-box" style="background-color: #fee2e2;"></div><span>Más caro</span></div>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-2">Según los precios promedio</p>
+                 <div class="quick-select-buttons">
+                    <button id="tonight-btn">Esta noche</button>
+                    <button id="next-weekend-btn">El próximo fin de semana</button>
+                </div>
+            </div>
+            <div class="calendar-modal-footer">
+                <button id="clear-dates-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Limpiar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Selección de Viajeros (para hoteles) -->
+    <div id="travelers-popover" class="popover-modal hidden">
+        <div class="popover-row">
+            <div>
+                <p class="font-semibold">Adultos</p>
+                <p class="text-xs text-gray-500">18 años o más</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
+                <span id="adults-count" class="font-semibold text-lg">1</span>
+                <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
+            </div>
+        </div>
+        <div class="popover-row">
+             <div>
+                <p class="font-semibold">Niños</p>
+                <p class="text-xs text-gray-500">0 a 17 años</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
+                <span id="children-count" class="font-semibold text-lg">0</span>
+                <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Reserva de Hotel -->
+    <div id="hotel-card-booking-modal" class="modal-overlay hidden calendar-modal">
+        <div class="modal-container">
+            <div class="calendar-modal-header">
+                <h3 id="hotel-modal-title" class="font-semibold text-lg">Reservar Hotel</h3>
+                <button class="modal-close-btn p-2 rounded-full hover:bg-gray-200 text-2xl leading-none">&times;</button>
+            </div>
+            <div id="hotel-calendar-top-info" class="calendar-modal-top-info">
+            </div>
+            <div class="calendar-modal-body">
+                <div id="hotel-modal-calendar-container">
+                </div>
+            </div>
+            <div id="hotel-modal-form-container" class="p-4 border-t overflow-y-auto" style="max-height: 35vh;">
+                 <form id="hotel-modal-form">
+                    <input type="hidden" id="hotel-modal-name">
+                    <h4 class="font-bold text-gray-700 mb-2">Datos del Titular</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="hotel-modal-firstname" class="block text-sm font-medium text-gray-700">Nombre</label>
+                            <input type="text" id="hotel-modal-firstname" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-guacamayafly-orange focus:border-guacamayafly-orange sm:text-sm" required>
+                        </div>
+                        <div>
+                            <label for="hotel-modal-lastname" class="block text-sm font-medium text-gray-700">Apellido</label>
+                            <input type="text" id="hotel-modal-lastname" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-guacamayafly-orange focus:border-guacamayafly-orange sm:text-sm" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="hotel-modal-email" class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="hotel-modal-email" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-guacamayafly-orange focus:border-guacamayafly-orange sm:text-sm" required>
+                        </div>
+                        <div>
+                            <label for="hotel-modal-phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                            <input type="tel" id="hotel-modal-phone" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-guacamayafly-orange focus:border-guacamayafly-orange sm:text-sm" required>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                         <label class="block text-sm font-medium text-gray-700 mb-2">Método de Pago</label>
+                         <div class="space-y-3" id="payment-options-container">
+                            <div class="payment-option" data-payment="whatsapp">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-sm">Reservar por WhatsApp</span>
+                                    <i class="fab fa-whatsapp text-xl text-green-500"></i>
+                                </div>
+                            </div>
+                            <div class="payment-option" data-payment="card">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-sm">Tarjeta de Crédito/Débito</span>
+                                    <div class="flex items-center gap-2">
+                                        <img src="https://cryptoindex.com/pic/icons/visa-mastercard.svg" alt="Visa y Mastercard" class="payment-logo">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="payment-option" data-payment="crypto">
+                                 <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-sm">Pagar con Criptomonedas</span>
+                                    <img src="https://www.bybit.com/bycsi-root/assets/image/coins/light/btc.svg?quality=63&format=avif&resize=width/50.4" alt="Bitcoin" class="payment-logo">
+                                </div>
+                            </div>
+                         </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="payment-info-popup" class="payment-info-popup"></div>
+
+    <!-- Modal de Servicios -->
+    <div id="amenities-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <!-- Grabber for mobile -->
+                <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full md:hidden"></div>
+                <button class="close-btn modal-close-btn"><i class="fas fa-times"></i></button>
+                <h2 class="font-semibold text-lg">¿Qué hay en este alojamiento?</h2>
+            </div>
+            <div id="amenities-modal-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal Normas de la casa -->
+    <div id="rules-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full md:hidden"></div>
+                <button class="close-btn modal-close-btn"><i class="fas fa-times"></i></button>
+                <h2 class="font-semibold text-lg">Normas de la casa</h2>
+            </div>
+            <div id="rules-modal-body" class="modal-body">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Seguridad y propiedad -->
+    <div id="safety-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full md:hidden"></div>
+                <button class="close-btn modal-close-btn"><i class="fas fa-times"></i></button>
+                <h2 class="font-semibold text-lg">Seguridad y propiedad</h2>
+            </div>
+            <div id="safety-modal-body" class="modal-body">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Política de cancelación -->
+    <div id="cancellation-modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-gray-300 rounded-full md:hidden"></div>
+                <button class="close-btn modal-close-btn"><i class="fas fa-times"></i></button>
+                <h2 class="font-semibold text-lg">Política de cancelación</h2>
+            </div>
+            <div id="cancellation-modal-body" class="modal-body">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Evaluaciones -->
+    <div id="reviews-modal" class="modal-overlay hidden">
+        <div class="modal-container max-w-4xl">
+            <div class="modal-header">
+                <button class="close-btn modal-close-btn"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="font-semibold text-lg">Evaluaciones</h2>
+            </div>
+            <div id="reviews-modal-body" class="modal-body p-0 sm:p-6">
+                <!-- Detailed reviews content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Sección de Checkout para Criptomonedas -->
+    <div id="crypto-checkout-section" class="modal-overlay hidden">
+        <div class="modal-container max-w-4xl max-h-[90vh] overflow-y-auto">
+             <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Finalizar Pago</h2>
+                <button id="close-crypto-checkout-btn" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times fa-lg"></i>&nbsp;Volver
+                </button>
+            </div>
+            <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="md:w-2/3">
+                        <h3 class="font-bold text-gray-700 mb-3 text-lg">Resumen de la Reserva</h3>
+                        <div id="crypto-summary-details" class="text-sm space-y-2 text-gray-600">
+                        </div>
+                    </div>
+                    <div class="md:w-1/2 flex flex-col items-center">
+                        <p class="font-semibold text-gray-700 mb-2">Escanear para Pagar</p>
+                        <div class="p-3 border rounded-lg bg-white shadow-sm">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh" alt="Código QR de pago" id="crypto-qr-code-img" class="w-40 h-40">
+                        </div>
+                         <p class="text-xs text-gray-500 mt-2">Use su billetera para escanear</p>
+                    </div>
+                </div>
+                <div class="mt-6 border-t pt-6">
+                    <h3 class="font-bold text-gray-700 mb-3 text-lg">O Pagar a la Siguiente Dirección</h3>
+                    <div id="crypto-wallets-list" class="space-y-3">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <header class="bg-white shadow-sm sticky top-0 z-40 hidden md:block">
+        <!-- Top bar -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Desktop Header -->
+            <div class="flex items-center justify-between h-16">
+                 <a href="index.html" class="flex items-center gap-2">
+                    <img src="https://guacamayafly.github.io/public/assets/img/logo-6.svg" alt="Guacamayafly Logo" class="h-8 w-auto">
+                    <span class="font-extrabold text-xl select-none text-guacamayafly-orange">GUACAMAYAFLY</span>
+                </a>
+                <div class="flex-1 flex justify-center px-8">
+                    <div class="flex items-center border rounded-full shadow-sm hover:shadow-md transition-shadow w-full max-w-lg">
+                        <button class="px-6 py-2 font-semibold flex-1 text-center truncate">Cualquier lugar</button>
+                        <span class="border-l h-6"></span>
+                        <button class="px-6 py-2 font-semibold flex-1 text-center truncate">Cualquier semana</button>
+                        <span class="border-l h-6"></span>
+                        <div class="flex items-center flex-1">
+                            <button class="pl-6 pr-2 py-2 text-gray-500 text-center w-full truncate">¿Cuántos?</button>
+                            <button class="bg-guacamayafly-orange text-white rounded-full w-8 h-8 flex items-center justify-center mr-2 flex-shrink-0">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 text-sm font-semibold">
+                     <a href="#" class="text-gray-700 hover:text-black">Descubrir</a>
+                    <a href="#" class="text-gray-700 hover:text-black">Viajes</a>
+                    <a href="#" class="text-gray-700 hover:text-black">Opinión</a>
+                    <a href="#" class="text-gray-700 hover:text-black flex items-center gap-1"><i class="fas fa-globe"></i> EUR</a>
+                    <button class="bg-gray-800 hover:bg-black text-white rounded-full px-4 py-2 text-sm font-semibold" type="button">Iniciar sesión</button>
+                </div>
+            </div>
+        </div>
+        <!-- Bottom bar (Categories) -->
+        <nav class="bg-white border-t hidden md:block">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center space-x-6 overflow-x-auto hide-scrollbar">
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-map-marker-alt"></i> Madrid
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-black border-b-2 border-black flex-shrink-0">
+                    <i class="fas fa-building"></i> Hoteles
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-star"></i> Cosas que hacer
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-utensils"></i> Restaurantes
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-plane"></i> Vuelos
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-house-user"></i> Alquileres vacacionales
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-ship"></i> Cruceros
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="fas fa-car"></i> Coches de alquiler
+                </a>
+                <a href="#" class="flex items-center gap-2 py-3 text-sm font-semibold text-gray-600 hover:text-black border-b-2 border-transparent hover:border-black flex-shrink-0">
+                    <i class="far fa-comments"></i> Foros
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sticky Section Nav (Desktop) -->
+    <nav id="section-nav" class="sticky-nav hidden md:flex" style="top: 64px;">
+         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-4 overflow-x-auto hide-scrollbar">
+            <a href="#information" class="active">Información</a>
+            <a href="#bedrooms-section">Donde Dormirás</a>
+            <a href="#traveler-recommendation">Opiniones</a>
+            <a href="#location">Ubicación</a>
+            <a href="#faq">Preguntas</a>
+        </div>
+    </nav>
+    
+    <!-- Mobile View Header -->
+    <div class="md:hidden">
+        <div class="relative">
+            <div class="h-80 bg-gray-200">
+                <img id="mobile-main-image" src="" alt="Alojamiento" class="w-full h-full object-cover">
+            </div>
+            <div class="absolute top-4 left-4 right-4 flex justify-between">
+                 <a href="index.html" class="bg-white/70 backdrop-blur-sm rounded-full h-9 w-9 flex items-center justify-center"><i class="fas fa-arrow-left"></i></a>
+                 <div class="flex gap-2">
+                    <button class="bg-white/70 backdrop-blur-sm rounded-full h-9 w-9 flex items-center justify-center"><i class="fas fa-share-up"></i></button>
+                    <button class="bg-white/70 backdrop-blur-sm rounded-full h-9 w-9 flex items-center justify-center"><i class="far fa-heart"></i></button>
+                 </div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-t-2xl -mt-6 relative">
+            <h1 id="mobile-hotel-name" class="text-2xl font-bold"></h1>
+            <div class="flex items-center justify-between text-sm mt-2">
+                <div class="flex items-center gap-1">
+                    <i class="fas fa-star text-guacamayafly-orange"></i>
+                    <span id="mobile-rating-value" class="font-semibold"></span>
+                    <a href="#reviews" id="mobile-reviews-link" class="text-gray-500 underline"></a>
+                </div>
+                <a href="#location" id="mobile-hotel-location" class="text-gray-800 font-semibold underline"></a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content (Shared between Mobile and Desktop) -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:pt-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 md:gap-12 lg:gap-16">
+            
+            <!-- Left Column / Main Mobile Content -->
+            <div class="md:col-span-2">
+                
+                <!-- Desktop Header Content -->
+                <div class="hidden md:block">
+                    <div class="flex justify-between items-center mb-4">
+                        <a href="index.html" class="back-button text-sm">
+                            <i class="fas fa-chevron-left text-sm"></i>
+                            <span id="back-button-text">Ver todos los hoteles en Madrid</span>
+                        </a>
+                        <div class="flex items-center space-x-2">
+                            <button class="action-icon" aria-label="Compartir"><i class="fa-solid fa-arrow-up-from-bracket"></i></button>
+                            <button class="action-icon" aria-label="Añadir a favoritos"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                    <h1 id="desktop-hotel-name" class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1"></h1>
+                    <div class="flex flex-wrap items-center text-sm text-gray-600 gap-x-3 gap-y-1 mb-4">
+                        <a href="#reviews" id="desktop-reviews-link" class="text-guacamayafly-orange hover:underline"></a>
+                        <span>·</span>
+                        <span id="desktop-hotel-location"></span>
+                    </div>
+                    <section id="photo-gallery-section" class="mb-8 grid grid-cols-3 gap-2 h-96">
+                        <div class="col-span-2 row-span-2 rounded-lg overflow-hidden cursor-pointer">
+                            <img id="desktop-main-image" src="" alt="Habitación de hotel con vistas a la ciudad" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/800x600/cccccc/ffffff?text=Imagen+Principal';"/>
+                        </div>
+                        <div class="rounded-lg overflow-hidden cursor-pointer"><img id="desktop-sub-image1" src="" alt="Viajero en el hotel" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/ffffff?text=Imagen+2';"/></div>
+                        <div class="rounded-lg overflow-hidden cursor-pointer"><img id="desktop-sub-image2" src="" alt="Suite del hotel" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/ffffff?text=Imagen+3';"/></div>
+                    </section>
+                </div>
+
+                <!-- NEW SECTIONS CONTAINER -->
+                <div id="information" class="bg-white p-4 md:p-0 md:border-0 rounded-lg mb-8">
+                    <!-- Host Profile Section -->
+                    <div id="host-profile-section" class="flex items-center gap-4 py-4 border-b">
+                        <div class="relative flex-shrink-0">
+                            <img id="host-avatar-main" src="" class="w-14 h-14 rounded-full" alt="Foto del anfitrión" onerror="this.onerror=null;this.src='https://placehold.co/56x56/cccccc/ffffff?text=Host';"/>
+                            <div id="superhost-badge-container" class="absolute -bottom-1 -right-1">
+                                <!-- SVG Badge will be inserted here -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3 id="hosted-by-text" class="text-lg font-semibold"></h3>
+                            <p id="host-details" class="text-sm text-gray-600"></p>
+                        </div>
+                    </div>
+                    <!-- Quality Highlights Section -->
+                    <div id="quality-highlights-section" class="space-y-4 py-6 border-b">
+                        <!-- Highlights will be inserted here -->
+                    </div>
+                    <!-- Translation Notice Section -->
+                    <div id="translation-notice-section" class="bg-gray-50 p-3 rounded-lg flex items-center justify-between text-sm my-6 border-b pb-6">
+                        <span>Parte de la información se ha traducido automáticamente.</span>
+                        <button class="font-semibold underline text-gray-800">Mostrar el original</button>
+                    </div>
+                    <!-- Expandable Description Section -->
+                    <div id="description-section" class="py-6 border-b">
+                        <div id="description-content" class="text-gray-700 leading-relaxed max-h-40 overflow-hidden transition-all duration-500">
+                            <!-- Description paragraphs will be inserted here -->
+                        </div>
+                        <button id="show-more-description-btn" class="font-semibold underline mt-4 text-sm text-gray-800">Mostrar más <i class="fas fa-chevron-right text-xs"></i></button>
+                    </div>
+                </div>
+
+                <section id="bedrooms-section" class="bg-white p-6 rounded-lg mb-8 border-b">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">¿Dónde dormirás?</h2>
+                    <div id="bedrooms-container" class="carousel-content-wrapper grid grid-flow-col auto-cols-[80%] sm:auto-cols-[48%] gap-4">
+                        <!-- Bedroom cards will be inserted here -->
+                    </div>
+                </section>
+
+                <section id="amenities-section" class="bg-white p-6 rounded-lg mb-8 border-b">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">¿Qué hay en este alojamiento?</h2>
+                    <div id="amenities-container" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 text-base">
+                        <!-- Amenities will be inserted here -->
+                    </div>
+                    <button id="show-amenities-btn" class="mt-8 border border-gray-800 text-gray-800 rounded-lg px-6 py-3 font-semibold hover:bg-gray-100 transition w-full md:w-auto">Mostrar todos los servicios</button>
+                </section>
+                
+                <!-- START: IMPROVED TRAVELER RECOMMENDATION SECTION -->
+                <section id="traveler-recommendation" class="py-8 border-b">
+                    <div class="text-center md:text-left">
+                        <div class="flex items-center justify-center gap-4 mb-4">
+                            <img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/059619e1-1751-42dd-84e4-50881483571a.png" class="h-16 md:h-24" alt="Laurel izquierdo">
+                            <h1 class="text-5xl md:text-7xl font-bold text-gray-900">5,0</h1>
+                            <img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/33b80859-e87e-4c86-841c-645c786ba4c1.png" class="h-16 md:h-24" alt="Laurel derecho">
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">Recomendación del viajero</h2>
+                        <p class="text-gray-600 mt-2 mb-6 max-w-lg mx-auto md:mx-0">Este alojamiento está entre el 1% de los que más gustan a los viajeros por sus valoraciones, evaluaciones y fiabilidad.</p>
+                    </div>
+
+                    <!-- Reviews Snippet Carousel/Grid -->
+                    <div id="reviews-grid" class="grid grid-flow-col auto-cols-[85%] md:auto-cols-auto md:grid-flow-row md:grid-cols-2 gap-4 md:gap-x-10 md:gap-y-8 overflow-x-auto md:overflow-visible pb-4 hide-scrollbar">
+                        <!-- Review snippet cards will be injected here by JS -->
+                    </div>
+
+                    <div class="mt-8">
+                        <button id="show-all-reviews-btn" class="w-full md:w-auto border border-gray-800 text-gray-800 rounded-lg px-6 py-3 font-semibold hover:bg-gray-100 transition">Mostrar las 111 evaluaciones</button>
+                    </div>
+                     <div class="mt-4 text-center md:text-left">
+                        <a href="#" class="text-sm font-semibold underline text-gray-600 hover:text-black">Descubre cómo funcionan las evaluaciones</a>
+                    </div>
+                </section>
+                <!-- END: IMPROVED TRAVELER RECOMMENDATION SECTION -->
+                
+                <section id="faq" class="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Preguntas frecuentes</h2>
+                    <div id="faq-container" class="space-y-4">
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Right Column (Desktop Booking Card) -->
+            <div class="hidden md:block">
+                <div class="sticky top-28">
+                    <section id="booking-section" class="bg-white p-4 md:p-6 rounded-lg shadow-lg border">
+                        <h2 class="font-bold text-lg md:text-xl mb-4">Consulte los precios para las fechas de su viaje</h2>
+                        
+                        <div id="booking-inputs-container" class="flex flex-col gap-2">
+                             <div class="border border-gray-200 rounded-lg">
+                                <div id="checkin-checkout-trigger" class="flex justify-between items-center p-3 text-left hover:bg-gray-50 cursor-pointer">
+                                    <div class="flex-1">
+                                        <span class="text-xs font-semibold text-gray-500 uppercase">Llegada</span>
+                                        <p id="main-checkin-display" class="font-semibold text-gray-900">Añadir fecha</p>
+                                    </div>
+                                    <div class="h-full border-l border-gray-200 mx-3"></div>
+                                    <div class="flex-1 text-left">
+                                        <span class="text-xs font-semibold text-gray-500 uppercase">Salida</span>
+                                        <p id="main-checkout-display" class="font-semibold text-gray-900">Añadir fecha</p>
+                                    </div>
+                                </div>
+                                <hr/>
+                                <div id="guests-trigger" class="flex items-center justify-between p-3 text-left hover:bg-gray-50 relative cursor-pointer">
+                                    <div>
+                                        <span class="text-xs font-semibold text-gray-500 uppercase">Huéspedes</span>
+                                        <p id="main-guests-display" class="font-semibold text-gray-900">1 habitación, 2 adultos</p>
+                                    </div>
+                                    <i class="fas fa-chevron-down text-gray-500 text-sm"></i>
+                                    <div id="hotel-travelers-modal" class="popover-modal hidden">
+                                        <div class="popover-row">
+                                            <div>
+                                                <p class="font-semibold">Adultos</p>
+                                                <p class="text-xs text-gray-500">18 años o más</p>
+                                            </div>
+                                            <div class="flex items-center gap-4">
+                                                <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
+                                                <span id="adults-count-desktop" class="font-semibold text-lg">1</span>
+                                                <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
+                                            </div>
+                                        </div>
+                                        <div class="popover-row">
+                                             <div>
+                                                <p class="font-semibold">Niños</p>
+                                                <p class="text-xs text-gray-500">0 a 17 años</p>
+                                            </div>
+                                            <div class="flex items-center gap-4">
+                                                <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
+                                                <span id="children-count-desktop" class="font-semibold text-lg">0</span>
+                                                <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="saved-result-bar" class="saved-result-bar hidden mt-0">
+                            <div>
+                                <i class="fas fa-check-circle"></i>
+                                <span id="saved-dates-guests"></span>
+                            </div>
+                            <button id="edit-selection-btn" class="bg-brand-green text-white font-bold py-1 px-3 rounded-full text-sm">Editar</button>
+                        </div>
+                        <button id="book-direct-btn" class="mt-4 bg-guacamayafly-orange text-white font-bold py-3 px-4 rounded-lg hover:bg-guacamayafly-dark-orange w-full">Reservar</button>
+                        
+                        <!-- Desktop Offers Section -->
+                        <div class="space-y-3 mt-6">
+                            <h3 class="font-semibold text-md">Ofertas destacadas</h3>
+                            <div class="flex flex-nowrap justify-between items-center border border-gray-200 p-3 rounded-lg gap-3">
+                                <div class="flex-shrink-0"><img src="https://www.expedia.es/_dms/header/logo.svg?locale=es_ES&siteid=9&2&6f9ec7db" alt="Booking.com" class="h-4"></div>
+                                <div class="text-right flex-shrink-0"><p class="font-bold text-lg">168 €</p></div>
+                                <a href="#" class="bg-brand-green text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 text-center flex-shrink-0">Ver oferta</a>
+                            </div>
+                            <div id="hidden-offers" class="accordion-content space-y-3 pt-3">
+                                 <div class="flex flex-nowrap justify-between items-center border border-gray-200 p-3 rounded-lg gap-3">
+                                    <div class="flex-shrink-0"><img src="https://www.expedia.es/_dms/header/logo.svg?locale=es_ES&siteid=9&2&6f9ec7db" alt="Expedia" class="h-5"></div>
+                                    <div class="text-right flex-shrink-0"><p class="font-bold text-lg">190 €</p></div>
+                                    <a href="#" class="bg-brand-green text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 text-center flex-shrink-0">Ver oferta</a>
+                                </div>
+                            </div>
+                            <button id="toggle-offers-btn" class="text-sm font-semibold w-full text-left hover:text-black">Ver todas las ofertas <i class="accordion-arrow fas fa-chevron-down ml-1 text-xs"></i></button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-gray-100 mt-12 py-10 text-xs text-blue-900 hidden md:block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-4 gap-y-6 gap-x-8">
+                <div>
+                    <div class="mb-3 font-semibold">Empresa</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Quiénes somos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Empleo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Anuncia tu alojamiento</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Publicidad</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Prensa</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Búsquedas</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Viajes a España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Hoteles en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Alquileres vacacionales España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Paquetes de vacaciones baratos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Vuelos baratos en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Alquiler de coches en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Todos los alojamientos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Guacamayafly Explore</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Políticas</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Términos y condiciones generales (excepto para reservas de Vrbo)</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Términos y condiciones de Vrbo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Privacidad</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cookies</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Condiciones de uso</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Información legal/contacto</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Pautas sobre el contenido y cómo denunciar contenido</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Ayuda</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Ayuda</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cancelar un vuelo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cancelar una reserva de hotel o de un alquiler vacacional</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Plazos de reembolso</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Utilizar un cupón de Guacamayafly</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Documentos para viajes internacionales</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 text-center text-[9px] text-gray-600">
+                El sitio web de Guacamayafly.es permite pagar con American Express, Diner's Club International, MasterCard, Visa, Visa Electron, CartSsi, Carte Bleue y PayPal.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Barra de reserva sticky para móvil -->
+    <div id="sticky-footer-mobile" class="sticky-footer-mobile md:hidden flex items-center justify-between px-4">
+        <div>
+            <p id="sticky-footer-price" class="font-bold text-lg"></p>
+            <p id="sticky-footer-dates" class="text-sm underline font-semibold cursor-pointer">Selecciona fechas</p>
+        </div>
+        <a href="#" id="sticky-footer-offer-btn" class="bg-brand-green text-white font-bold py-2 px-4 rounded-full hover:opacity-90 w-auto">Reservar</a>
+    </div>
+
+    <!-- Barra de reserva sticky para desktop -->
+    <div id="sticky-footer-desktop" class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 shadow-lg z-40 hidden md:flex items-center justify-center">
+        <div class="max-w-7xl w-full flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600">Precio por noche</p>
+                <p id="sticky-footer-price-desktop" class="font-bold text-2xl text-gray-900"></p>
+                <a href="#" class="text-sm text-brand-green font-semibold hover:underline">Ver detalles de precios</a>
+            </div>
+            <button id="book-now-desktop-btn" class="bg-brand-green text-white font-bold py-3 px-8 rounded-full hover:opacity-90 text-lg">Reservar ahora</button>
+        </div>
+    </div>
+
+
+    <script>
+    // Utility function for showing notifications
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        if (!container) {
+            console.error('Notification container not found.');
+            return;
+        }
+
+        const notification = document.createElement('div');
+        notification.className = `notification-popup ${type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white px-4 py-2 rounded-lg shadow-md mb-2`;
+        notification.textContent = message;
+        container.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+
+        // Animate out and remove
+        setTimeout(() => {
+            notification.classList.remove('show');
+            notification.addEventListener('transitionend', () => notification.remove(), { once: true });
+        }, 3000);
+    }
+
+    // Utility function for showing development popup
+    function showDevelopmentPopup(callback) {
+        const overlay = document.getElementById('development-popup-overlay');
+        const closeButton = document.getElementById('development-popup-close');
+
+        if (overlay && closeButton) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('visible');
+
+            const handleClose = () => {
+                overlay.classList.remove('visible');
+                overlay.classList.add('hidden');
+                closeButton.removeEventListener('click', handleClose);
+                overlay.removeEventListener('click', handleOverlayClick);
+                if (callback) callback();
+            };
+
+            const handleOverlayClick = (event) => {
+                if (event.target === overlay) {
+                    handleClose();
+                }
+            };
+
+            closeButton.addEventListener('click', handleClose);
+            overlay.addEventListener('click', handleOverlayClick);
+        } else {
+            if (callback) callback(); 
+        }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        const hotelsDB = [
+            { 
+              id: 11, 
+              name: 'Hotel Victoria 4 Puerta del Sol', 
+              price: 150, 
+              rating: 5.0, 
+              reviews: 111, 
+              location: 'Tigard, Oregón, Estados Unidos', 
+              host: {
+                  name: 'Katherine',
+                  avatar: 'https://a0.muscache.com/im/pictures/user/User/original/6bc28885-1e49-4024-9254-a71eaa8b43c5.jpeg?im_w=240',
+                  isSuperhost: true,
+                  experience: 2,
+              },
+              isGuestFavorite: true,
+              hasSelfCheckIn: true,
+              cancellationPolicy: "Cancelación gratuita antes del 30 oct",
+              capacity: {
+                  guests: 3,
+                  bedrooms: 1,
+                  beds: 1,
+                  baths: 1
+              },
+              address: 'Calle de Victoria 4, 28012 Madrid España', 
+              neighborhood: {
+                  title: "Lo más destacado del barrio",
+                  description: "Este es un barrio suburbano tranquilo con muchos espacios naturales y colinas para hacer senderismo. También es fácil ir andando a tiendas de comestibles, restaurantes, un cine y una bolera."
+              },
+              description: {
+                  main: "He creado lo que creo que es una estancia relajante. Dormirás en un colchón de espuma viscoelástica con sábanas de algodón. Además, hay un televisor inteligente de 55 pulgadas con Netflix gratuito y Apple TV, junto con una selección de libros y juegos. El patio y el cenador también están disponibles y son las zonas para fumadores.",
+                  extra: "Esta suite principal en mi casa tiene una entrada privada y un patio. No hay espacios compartidos y hay una cerradura a ambos lados de la puerta insonorizada de la casa principal para valorar tu privacidad y la mía....",
+                  space: "Esta es una casa de dos pisos y esta suite principal del segundo piso tiene una entrada independiente y acceso solo a esa suite y al patio dedicado.",
+                  common_areas: "Tendrás una entrada independiente a esta suite y un patio privado cerrado. No tendrás acceso al resto de esta casa y no hay espacios que compartamos, excepto la entrada si aparcas allí. :)",
+                  other_notes: "Tengo un perro que es mitad husky y mitad Staffordshire bull terrier. Por eso tienes tu propio patio y mantengo cerrada la puerta que nos separa: ¡cada uno tiene su propio espacio, necesariamente!"
+              },
+              img: 'https://storage.googleapis.com/a1aa/image/7be15fdb-6ab0-4bd0-6612-8e0b7f8750f4.jpg', 
+              mapImage: 'https://maps.googleapis.com/maps/api/staticmap?center=45.4219%2C-122.8408&key=YOUR_API_KEY&scale=2&size=600x400&zoom=14&map_id=94ab3b273b0d6b81',
+              galleryImages: [
+                  'https://storage.googleapis.com/a1aa/image/7be15fdb-6ab0-4bd0-6612-8e0b7f8750f4.jpg', 
+                  'https://storage.googleapis.com/a1aa/image/49e5886d-2903-48c5-3649-78607fede91a.jpg', 
+                  'https://storage.googleapis.com/a1aa/image/ee5c710a-dee9-4dce-b960-ac814d36ff0d.jpg'
+              ], 
+              bedrooms: [
+                { name: "Dormitorio", beds: "1 cama de matrimonio grande, 1 colchón hinchable, 1 cuna", image: "https://a0.muscache.com/im/pictures/miso/Hosting-889471689035434394/original/12889813-4e42-4217-a065-e337f71d55d2.jpeg?im_w=720" },
+              ],
+              amenities: {
+                    "Baño": [
+                        { text: "Secador de pelo", icon: '<i class="fas fa-wind fa-lg"></i>' },
+                        { text: "Productos de limpieza", icon: '<i class="fas fa-pump-soap fa-lg"></i>' },
+                        { text: "Champú", icon: '<i class="fas fa-bottle-droplet fa-lg"></i>' },
+                        { text: "Acondicionador", icon: '<i class="fas fa-bottle-droplet fa-lg"></i>' },
+                        { text: "Gel de baño", icon: '<i class="fas fa-soap fa-lg"></i>' },
+                        { text: "Agua caliente", icon: '<i class="fas fa-temperature-high fa-lg"></i>' }
+                    ],
+                    "Dormitorio y lavandería": [
+                        { text: "Lavadora", icon: '<i class="fas fa-jug-detergent fa-lg"></i>' },
+                        { text: "Secadora", icon: '<i class="fas fa-sun fa-lg"></i>' },
+                        { text: "Servicios básicos (toallas, sábanas, jabón, papel higiénico)", icon: '<i class="fas fa-check-square fa-lg"></i>' },
+                        { text: "Perchas", icon: '<i class="fas fa-hanger fa-lg"></i>' },
+                        { text: "Ropa de cama", icon: '<i class="fas fa-bed fa-lg"></i>' },
+                        { text: "Almohadas y mantas adicionales", icon: '<i class="fas fa-layer-group fa-lg"></i>' },
+                        { text: "Plancha", icon: '<i class="fas fa-iron fa-lg"></i>' }
+                    ],
+                    "Entretenimiento": [
+                         { text: "Televisión de alta definición de 55 pulgadas con Apple TV, Netflix, etc.", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M9 29v-2h2v-2H6a5 5 0 0 1-5-4.78V8a5 5 0 0 1 4.78-5H26a5 5 0 0 1 5 4.78V20a5 5 0 0 1-4.78 5H21v2h2v2zm10-4h-6v2h6zm7-20H6a3 3 0 0 0-3 2.82V20a3 3 0 0 0 2.82 3H26a3 3 0 0 0 3-2.82V8a3 3 0 0 0-2.82-3z"></path></svg>' },
+                         { text: "Libros y material de lectura", icon: '<i class="fas fa-book-open fa-lg"></i>' }
+                    ],
+                     "Internet y oficina": [
+                        { text: "Wifi rápido (474 Mbps)", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M16 20.33a3.67 3.67 0 1 1 0 7.34 3.67 3.67 0 0 1 0-7.34zm0 2a1.67 1.67 0 1 0 0 3.34 1.67 1.67 0 0 0 0-3.34zM16 15a9 9 0 0 1 8.04 4.96l-1.51 1.51a7 7 0 0 0-13.06 0l-1.51-1.51A9 9 0 0 1 16 15zm0-5.33c4.98 0 9.37 2.54 11.94 6.4l-1.45 1.44a12.33 12.33 0 0 0-20.98 0l-1.45-1.45A14.32 14.32 0 0 1 16 9.66zm0-5.34c6.45 0 12.18 3.1 15.76 7.9l-1.43 1.44a17.64 17.64 0 0 0-28.66 0L.24 12.24c3.58-4.8 9.3-7.9 15.76-7.9z"></path></svg>' },
+                        { text: "Zona para trabajar", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M26 2a1 1 0 0 1 .92.61l.04.12 2 7a1 1 0 0 1-.85 1.26L28 11h-3v5h6v2h-2v13h-2v-2.54a3.98 3.98 0 0 1-1.73.53L25 29H7a3.98 3.98 0 0 1-2-.54V31H3V18H1v-2h5v-4a1 1 0 0 1 .88-1h.36L6.09 8.4l1.82-.8L9.43 11H12a1 1 0 0 1 1 .88V16h10v-5h-3a1 1 0 0 1-.99-1.16l.03-.11 2-7a1 1 0 0 1 .84-.72L22 2h4zm1 16H5v7a2 2 0 0 0 1.7 1.98l.15.01L7 27h18a2 2 0 0 0 2-1.85V18zm-16-5H8v3h3v-3zm14.24-9h-2.49l-1.43 5h5.35l-1.43-5z"></path></svg>' }
+                    ],
+                    "Cocina y comedor": [
+                        { text: "Cocina", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M23 2a1 1 0 0 1 1 .88V5h2v2h-1.1a5.01 5.01 0 0 1-9.8 0H4V5h12V2.88A1 1 0 0 1 17 2h6zm-5 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 9v18h22V9zm20 2v3H7v-3zm0 5v10H7V16z"></path></svg>'},
+                        { text: "Nevera", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M25 1H7a5 5 0 0 0-5 5v20a5 5 0 0 0 5 5h18a5 5 0 0 0 5-5V6a5 5 0 0 0-5-5zM8 13h2v2H8zm0-4h2v2H8zm18 21a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3zm-2-15H4v14h22z"></path></svg>'},
+                        { text: "Microondas", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M28 7H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h24a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM5 23V9h15v14zm18 0h-1V9h1zm4-15a3 3 0 0 1 3 3v16a3 3 0 0 1-3-3H4a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zm-10 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"></path></svg>'},
+                    ],
+                    "Servicios": [
+                         { text: "Se permite dejar el equipaje", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M30 29v2H2v-2zM20 1a2 2 0 0 1 2 1.85V5h3a5 5 0 0 1 5 4.78V22a5 5 0 0 1-4.78 5H7a5 5 0 0 1-5-4.78V10a5 5 0 0 1 4.78-5H10V3a2 2 0 0 1 1.85-2H12zm5 6H7a3 3 0 0 0-3 2.82V22a3 3 0 0 0 2.82 3H25a3 3 0 0 0 3-2.82V10a3 3 0 0 0-3-3zm-8 2v9.5l3.3-3.3 1.4 1.42-4.64 4.65-.11.1a1.5 1.5 0 0 1-1.9 0l-.11-.1-4.65-4.65 1.42-1.41L15 18.5V9zm3-6h-8v2h8z"></path></svg>' },
+                         { text: "Llegada autónoma", icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" class="w-6 h-6 text-gray-800"><path d="M24.33 1.67a2 2 0 0 1 2 1.85v24.81h3v2H2.67v-2h3V3.67a2 2 0 0 1 1.85-2h.15zm-4 2H7.67v24.66h12.66zm4 0h-2v24.66h2zm-7 11a1.33 1.33 0 1 1 0 2.66 1.33 1.33 0 0 1 0-2.66z"></path></svg>'}
+                    ]
+                },
+              distance: 0.2, 
+              sponsored: false,
+              faq: [
+                { q: "¿Qué atracciones populares hay cerca de Hotel Victoria 4 Puerta del Sol?", a: "Algunas atracciones cercanas son Calle 365 (0,2 km), The PubCrawl Company (0,3 km) y Madrid Urban Vibes Experiences (0,1 km)." },
+                { q: "¿Cuáles son algunos de los servicios del alojamiento Hotel Victoria 4 Puerta del Sol?", a: "Algunos de los servicios más populares que se ofrecen son wifi gratuito, restaurante y bar." },
+              ],
+              reviewsData: [
+                  { rating: 5, author: "Naci", location: "Medford, Oregón", date: "hace 4 semanas", text: "Katherine fue amable, servicial y atenta en los mensajes. Todo el proceso de llegada/salida fue fácil y sin contacto. La habitación en sí estaba elegantemente decorada y totalmente equipada. ¡Un alojamiento encantador!", avatar: "https://a0.muscache.com/im/pictures/user/5f02a9ce-90e9-4230-91d8-2621629c0c4a.jpg?im_w=240" },
+                  { rating: 5, author: "Oanh", location: "Lleva 3 años en Airbnb", date: "hace 3 semanas", text: "¡Gracias por ser un anfitrión tan maravilloso y hacer que tu alojamiento se sienta acogedor y cómodo como si estuviera en mi propia casa! La habitación estaba muy limpia y se nota que pensó a fondo en todo.", avatar: "https://a0.muscache.com/im/pictures/user/fbf8db91-4243-4308-8858-02081eca164a.jpg?im_w=240" },
+                  { rating: 5, author: "Devin", location: "Lleva 2 meses en Airbnb", date: "hace 3 días", text: "Era la primera vez que usaba Airbnb. Katherine me ayudó mucho a navegar por el proceso. El espacio era excelente y también ofrecía una zona al aire libre muy agradable.", avatar: "https://a0.muscache.com/im/pictures/user/b652aaa3-c93d-480f-a3ac-ea792ec1d2cd.jpg?im_w=240" },
+                  { rating: 5, author: "Madison", location: "Silverdale, Washington", date: "hace 1 semana", text: "Katherine fue una anfitriona fantástica y su casa es muy acogedora. Siempre respondió rápidamente y fue complaciente. ¡Su casa estaba muy limpia y tenía todo lo que necesitábamos para una estancia cómoda!", avatar: "https://a0.muscache.com/im/pictures/user/User/original/7ce6067e-5d39-475f-8854-852d1d92f593.jpeg?im_w=240" },
+                  { rating: 5, author: "Sierra", location: "Boardman, Oregón", date: "hace 1 semana", text: "Excelente estancia, mi marido disfrutó de poder fumar en el cenador. Puntos de bonificación en mi libro para que mi hija pueda quemar energía en las escaleras. Temperatura perfecta para dormir bien.", avatar: "https://a0.muscache.com/im/pictures/user/df7e9a6f-9e56-444e-9d73-553f10528609.jpg?im_w=240" },
+                  { rating: 5, author: "Janille", location: "Los Ángeles, California", date: "hace 2 semanas", text: "¡Increíble relación calidad-precio! La habitación estaba limpia, tranquila y cómoda. Todos los servicios necesarios estaban disponibles. No podríamos pedir nada más.", avatar: "https://a0.muscache.com/im/pictures/user/a577fcf1-c7ba-4ca7-9ce4-a0b0a167845b.jpg?im_w=240" },
+                  { rating: 5, author: "Mark", location: "Santa Cruz, California", date: "abril de 2025", text: "Me encantó esta casa, ¡estoy deseando volver a alojarme aquí algún día!", avatar: "https://a0.muscache.com/im/pictures/user/User/original/c9dc237a-87c8-4414-9d93-e5e84fad92be.jpeg?im_w=240" },
+                  { rating: 5, author: "Charlotte", location: "Lleva 8 años en Airbnb", date: "marzo de 2025", text: "Nos encantó nuestra estancia en Roossihuus. La casa se sintió instantáneamente hogareña, era espaciosa y estaba bien equipada. Las vistas panorámicas a las montañas eran absolutamente impresionantes.", avatar: "https://a0.muscache.com/im/pictures/user/72d7ff76-acda-4f0a-bb15-84825be583b7.jpg?im_w=240" }
+              ]
+            }
+        ];
+        
+        let currentDisplayedHotel = null;
+        let autoplayIntervals = {};
+
+        function startAutoplay(carouselId, intervalTime = 3000) {
+            const carousel = document.getElementById(carouselId);
+            if (!carousel) return;
+
+            if (autoplayIntervals[carouselId]) {
+                clearInterval(autoplayIntervals[carouselId]);
+            }
+
+            autoplayIntervals[carouselId] = setInterval(() => {
+                const scrollAmount = carousel.offsetWidth * 0.5;
+                carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+                if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth) {
+                    carousel.scrollTo({ left: 0, behavior: 'smooth' });
+                }
+            }, intervalTime);
+        }
+
+        function setupCarouselObserver(carouselId) {
+            const carousel = document.getElementById(carouselId);
+            if (!carousel) return;
+            let lastAnimatedCard = null;
+
+            const observer = new IntersectionObserver((entries) => {
+                    let mostVisibleEntry = null;
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            if (!mostVisibleEntry || entry.intersectionRatio > mostVisibleEntry.intersectionRatio) {
+                                mostVisibleEntry = entry;
+                            }
+                        }
+                    });
+
+                    if (mostVisibleEntry && mostVisibleEntry.target !== lastAnimatedCard) {
+                        const card = mostVisibleEntry.target;
+                        lastAnimatedCard = card;
+
+                        if (!card.classList.contains('initial-hop-animation') && !card.classList.contains('hop-animation')) {
+                            card.classList.add('hop-animation');
+                            card.addEventListener('animationend', () => card.classList.remove('hop-animation'), { once: true });
+                        }
+                    }
+                },
+                { root: carousel, threshold: [0.75] }
+            );
+
+            carousel.querySelectorAll('.interactive-card').forEach((card) => {
+                observer.observe(card);
+            });
+        }
+        
+        function populateFAQ(faqData) {
+            const container = document.getElementById('faq-container');
+            const faqSection = document.getElementById('faq');
+            if (!container || !faqSection) return;
+
+            faqSection.style.display = 'block'; 
+            container.innerHTML = '';
+
+            if (!faqData || faqData.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-sm italic">No hay preguntas frecuentes disponibles para este hotel.</p>';
+                return;
+            }
+            
+            faqData.forEach((item, index) => {
+                const faqItem = document.createElement('div');
+                faqItem.className = 'border-b';
+                faqItem.innerHTML = `
+                    <div class="faq-item-header py-4">
+                        <h3 class="font-semibold text-gray-800">${item.q}</h3>
+                        <i class="fas fa-chevron-down faq-arrow text-gray-500"></i>
+                    </div>
+                    <div class="faq-item-body pb-4">
+                        <p class="text-gray-600 text-sm">${item.a}</p>
+                    </div>
+                `;
+                container.appendChild(faqItem);
+            });
+
+            container.querySelectorAll('.faq-item-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const body = header.nextElementSibling;
+                    const arrow = header.querySelector('.faq-arrow');
+                    
+                    body.classList.toggle('open');
+                    arrow.classList.toggle('rotated');
+                });
+            });
+        }
+        
+        function populateBedrooms(bedrooms) {
+            const container = document.getElementById('bedrooms-container');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!bedrooms || bedrooms.length === 0) {
+                document.getElementById('bedrooms-section').style.display = 'none';
+                return;
+            }
+            document.getElementById('bedrooms-section').style.display = 'block';
+            bedrooms.forEach(bedroom => {
+                const card = document.createElement('div');
+                card.className = 'border rounded-xl p-4 flex-shrink-0 w-full cursor-pointer hover:shadow-lg transition-shadow';
+                card.innerHTML = `
+                    <img src="${bedroom.image}" alt="Foto del ${bedroom.name}" class="w-full h-40 object-cover rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/ffffff?text=Dormitorio';"/>
+                    <h3 class="font-semibold text-lg">${bedroom.name}</h3>
+                    <p class="text-gray-600 text-sm">${bedroom.beds}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function populateNewHostAndHighlights(hotel) {
+            // Host Profile
+            const hostNameEl = document.getElementById('hosted-by-text');
+            const hostDetailsEl = document.getElementById('host-details');
+            const hostAvatarEl = document.getElementById('host-avatar-main');
+            const badgeContainer = document.getElementById('superhost-badge-container');
+
+            if (hostNameEl) hostNameEl.textContent = `Anfitrión: ${hotel.host.name}`;
+            if (hostAvatarEl) hostAvatarEl.src = hotel.host.avatar;
+            if (hostDetailsEl) {
+                let details = [];
+                if (hotel.host.isSuperhost) details.push('Superanfitrión');
+                if (hotel.host.experience) details.push(`${hotel.host.experience} años de experiencia`);
+                hostDetailsEl.textContent = details.join(' · ');
+            }
+            if (badgeContainer) {
+                badgeContainer.innerHTML = hotel.host.isSuperhost ? `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 14" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px;"><linearGradient id="a" x1="8.5%" x2="92.18%" y1="17.16%" y2="17.16%"><stop offset="0" stop-color="#e61e4d"></stop><stop offset=".5" stop-color="#e31c5f"></stop><stop offset="1" stop-color="#d70466"></stop></linearGradient><path fill="#fff" d="M9.93 0c.88 0 1.6.67 1.66 1.52l.01.15v2.15c0 .54-.26 1.05-.7 1.36l-.13.08-3.73 2.17a3.4 3.4 0 1 1-2.48 0L.83 5.26A1.67 1.67 0 0 1 0 3.96L0 3.82V1.67C0 .79.67.07 1.52 0L1.67 0z"></path><path fill="url(#a)" d="M5.8 8.2a2.4 2.4 0 0 0-.16 4.8h.32a2.4 2.4 0 0 0-.16-4.8zM9.93 1H1.67a.67.67 0 0 0-.66.57l-.01.1v2.15c0 .2.1.39.25.52l.08.05L5.46 6.8c.1.06.2.09.29.1h.1l.1-.02.1-.03.09-.05 4.13-2.4c.17-.1.3-.29.32-.48l.01-.1V1.67a.67.67 0 0 0-.57-.66z"></path></svg>
+                ` : '';
+            }
+
+            // Quality Highlights
+            const highlightsContainer = document.getElementById('quality-highlights-section');
+            if (highlightsContainer) {
+                highlightsContainer.innerHTML = '';
+                if (hotel.isGuestFavorite) {
+                    highlightsContainer.innerHTML += `
+                        <div class="flex items-start gap-4">
+                            <img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/4d090f93-f9a5-4f06-95e4-ca737c0d0ab5.png" class="w-6 h-6">
+                            <div>
+                                <h4 class="font-semibold">Entre el 1 % de los que más gustan</h4>
+                                <p class="text-sm text-gray-600">Este es uno de los Airbnb favoritos de los viajeros, según sus valoraciones, evaluaciones y su fiabilidad.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                if (hotel.hasSelfCheckIn) {
+                     highlightsContainer.innerHTML += `
+                        <div class="flex items-start gap-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" class="w-6 h-6 text-gray-800"><path d="M24.33 1.67a2 2 0 0 1 2 1.85v24.81h3v2H2.67v-2h3V3.67a2 2 0 0 1 1.85-2h.15zm-4 2H7.67v24.66h12.66zm4 0h-2v24.66h2zm-7 11a1.33 1.33 0 1 1 0 2.66 1.33 1.33 0 0 1 0-2.66z"></path></svg>
+                            <div>
+                                <h4 class="font-semibold">Llegada autónoma</h4>
+                                <p class="text-sm text-gray-600">Accede al alojamiento directamente mediante la caja de seguridad para llaves.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                 if (hotel.cancellationPolicy) {
+                     highlightsContainer.innerHTML += `
+                        <div class="flex items-start gap-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" class="w-6 h-6 text-gray-800"><path d="M11.67 0v1.67h8.66V0h2v1.67h6a2 2 0 0 1 2 1.85v16.07a2 2 0 0 1-.46 1.28l-.12.13L21 29.75a2 2 0 0 1-1.24.58H6.67a5 5 0 0 1-5-4.78V3.67a2 2 0 0 1 1.85-2h6.15V0zm16.66 11.67H3.67v13.66a3 3 0 0 0 2.82 3h11.18v-5.66a5 5 0 0 1 4.78-5h5.88zm-.08 8h-5.58a3 3 0 0 0-3 2.82v5.76zm-18.58-16h-6v6h24.66v-6h-6v1.66h-2V3.67h-8.66v1.66h-2z"></path></svg>
+                            <div>
+                                <h4 class="font-semibold">${hotel.cancellationPolicy}</h4>
+                                <p class="text-sm text-gray-600">Si cambias de opinión, recibirás un reembolso completo.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Description
+            const descriptionContainer = document.getElementById('description-content');
+            if (descriptionContainer && hotel.description) {
+                descriptionContainer.innerHTML = `
+                    <p>${hotel.description.main}</p>
+                    <p class="mt-4">${hotel.description.extra}</p>
+                    <div id="more-description" class="hidden space-y-4 mt-4">
+                        <h4 class="font-semibold text-lg mt-2">El espacio</h4>
+                        <p>${hotel.description.space}</p>
+                        <h4 class="font-semibold text-lg mt-2">Servicios y zonas comunes</h4>
+                        <p>${hotel.description.common_areas}</p>
+                        <h4 class="font-semibold text-lg mt-2">Otros aspectos destacables</h4>
+                        <p>${hotel.description.other_notes}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateMainHotelContent(hotel) {
+            currentDisplayedHotel = hotel;
+            const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            const setSrc = (id, src) => { const el = document.getElementById(id); if (el) el.src = src; };
+            const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+            const hotelName = hotel.name || 'Hotel Desconocido';
+            const hotelLocation = hotel.location || 'Ubicación Desconocida';
+            const hotelRating = hotel.rating ?? 0;
+            const hotelReviews = hotel.reviews ?? 0;
+            const hotelAddress = hotel.address || 'Dirección no disponible';
+            const hotelPrice = hotel.price ?? 0;
+
+            const mainImageSrc = hotel.img || hotel.image || 'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+no+disponible';
+
+            const hotelGalleryImages = hotel.galleryImages || [];
+            const desktopMainImageSrc = hotelGalleryImages[0] || mainImageSrc;
+            const subImage1Src = hotelGalleryImages[1] || 'https://placehold.co/400x300/cccccc/ffffff?text=Imagen+2';
+            const subImage2Src = hotelGalleryImages[2] || 'https://placehold.co/400x300/cccccc/ffffff?text=Imagen+3';
+
+            const hotelMapImage = hotel.mapImage || 'https://placehold.co/800x600/cccccc/ffffff?text=Mapa+no+disponible';
+            const hotelFaq = hotel.faq || [];
+            const hotelReviewsData = hotel.reviewsData || [];
+            
+            const capacity = hotel.capacity || {};
+            const guests = capacity.guests || 0;
+            const bedrooms = capacity.bedrooms || 0;
+            const beds = capacity.beds || 0;
+            const baths = capacity.baths || 0;
+
+            // --- Populate New Sections ---
+            populateNewHostAndHighlights(hotel);
+            
+            // Mobile header
+            setText('mobile-hotel-name', `${guests} viajeros · ${bedrooms} dormitorio · ${beds} cama · ${baths} baño`);
+            setText('mobile-rating-value', hotelRating.toFixed(1));
+            setText('mobile-reviews-link', `(${hotelReviews.toLocaleString('es-ES')} opiniones)`);
+            setText('mobile-hotel-location', hotel.name);
+            setSrc('mobile-main-image', mainImageSrc);
+
+            // Desktop header
+            setText('desktop-hotel-name', `Alojamiento entero: vivienda en ${hotelLocation}`);
+            setText('desktop-hotel-location', `${guests} viajeros · ${bedrooms} dormitorio · ${beds} cama · ${baths} baño`);
+            
+            const reviewsText = `(${hotelReviews.toLocaleString('es-ES')} opiniones)`;
+            setText('desktop-reviews-link', reviewsText);
+            
+            // Other sections
+            setText('location-city-state', hotel.location);
+            setText('neighborhood-title', hotel.neighborhood.title);
+            setText('neighborhood-description', hotel.neighborhood.description);
+            
+            const mapIframe = document.getElementById('gmap-iframe');
+            if(mapIframe) {
+                mapIframe.src = `https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${encodeURIComponent(hotel.location)}`;
+            }
+            
+            setText('sticky-footer-price', `${hotelPrice} €`); 
+            setText('sticky-footer-price-desktop', `${hotelPrice} €`); 
+            
+            setSrc('desktop-main-image', desktopMainImageSrc);
+            setSrc('desktop-sub-image1', subImage1Src);
+            setSrc('desktop-sub-image2', subImage2Src);
+            
+            populateBedrooms(hotel.bedrooms);
+            populateAmenities(hotel.amenities);
+            populateAmenitiesModal(hotel.amenities);
+            populateReviewsGrid(hotelReviewsData); // Updated function
+            populateFAQ(hotelFaq);
+
+            selectedDeparture = null;
+            selectedReturn = null;
+            hotelAdultsCount = 1;
+            hotelChildrenCount = 0;
+            updateMainBookingDisplays();
+
+        }
+        
+        function populateAmenities(amenities) {
+            const container = document.getElementById('amenities-container');
+            if(!container) return;
+            container.innerHTML = '';
+            const allAmenities = Object.values(amenities).flat();
+            allAmenities.slice(0, 10).forEach(amenity => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-4';
+                item.innerHTML = `
+                    <div class="flex-shrink-0 w-6 h-6 text-gray-800">${amenity.icon}</div>
+                    <span>${amenity.text}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function populateAmenitiesModal(amenities) {
+            const container = document.getElementById('amenities-modal-body');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (const category in amenities) {
+                const categoryWrapper = document.createElement('div');
+                categoryWrapper.className = 'mb-8';
+                
+                const categoryTitle = document.createElement('h3');
+                categoryTitle.className = 'text-xl font-semibold mb-4';
+                categoryTitle.textContent = category;
+                categoryWrapper.appendChild(categoryTitle);
+
+                const amenitiesList = document.createElement('div');
+                amenitiesList.className = 'grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8';
+                
+                amenities[category].forEach(amenity => {
+                    const amenityItem = document.createElement('div');
+                    amenityItem.className = 'flex items-center gap-4 text-gray-700';
+                    amenityItem.innerHTML = `
+                        <div class="flex-shrink-0 w-6 h-6">${amenity.icon}</div>
+                        <span>${amenity.text}</span>
+                    `;
+                    amenitiesList.appendChild(amenityItem);
+                });
+
+                categoryWrapper.appendChild(amenitiesList);
+                container.appendChild(categoryWrapper);
+            }
+        }
+
+        function createHotelListCard(hotel) {
+            const hotelCard = document.createElement('div');
+            const ratingDotsHtml = '<span class="filled"></span>'.repeat(Math.round(hotel.rating ?? 0)) + '<span></span>'.repeat(5 - Math.round(hotel.rating ?? 0));
+            
+            hotelCard.className = 'bg-white rounded-lg shadow-sm border interactive-card flex flex-col items-center sm:items-start gap-2 p-2 cursor-pointer flex-shrink-0 w-full';
+            
+            hotelCard.innerHTML = `
+                <img alt="Imagen de ${hotel.name || 'Hotel'}" src="${hotel.img || hotel.image || 'https://placehold.co/64x64/cccccc/ffffff?text=Hotel'}" class="w-16 h-16 object-cover rounded-md flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/64x64/cccccc/ffffff?text=Hotel';"/>
+                <div class="flex flex-col flex-grow w-full">
+                    <div>
+                        ${hotel.sponsored ? '<p class="text-xs text-gray-500 font-medium">Patrocinado <i class="fas fa-info-circle text-gray-400 fa-xs"></i></p>' : ''}
+                        <h4 class="font-semibold text-gray-900 text-sm leading-tight mt-0.5 truncate">${hotel.name || 'Hotel Desconocido'}</h4>
+                        <div class="flex items-center text-xs text-gray-600 mt-0.5">
+                            <span class="font-bold text-xs mr-0.5">${(hotel.rating ?? 0).toFixed(1)}</span>
+                            <div class="rating-dots mr-1" style="transform: scale(0.75); transform-origin: left center;">${ratingDotsHtml}</div>
+                            <span class="text-xs">(${(hotel.reviews ?? 0).toLocaleString('es-ES')})</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-0.5"><i class="fas fa-map-marker-alt fa-xs mr-1"></i>a ${hotel.distance ?? '?.?'} km del centro</p>
+                    </div>
+                    <div class="flex items-center justify-between mt-1 w-full">
+                        <p class="text-base font-bold text-gray-800">${hotel.price ?? 0} €</p>
+                        <button class="bg-brand-green text-white font-bold py-1 px-2 rounded-full hover:opacity-90 text-xs view-hotel-btn">Ver hotel</button>
+                    </div>
+                </div>
+            `;
+            hotelCard.addEventListener('click', () => updateMainHotelContent(hotel));
+            return hotelCard;
+        }
+
+        function createCompactHotelCard(hotel) {
+            const hotelCard = document.createElement('div');
+            const ratingDotsHtml = '<span class="filled"></span>'.repeat(Math.round(hotel.rating ?? 0)) + '<span></span>'.repeat(5 - Math.round(hotel.rating ?? 0));
+            hotelCard.className = 'flex-shrink-0 w-full sm:w-48 bg-white rounded-lg shadow-sm cursor-pointer border interactive-card';
+            hotelCard.innerHTML = `
+                <img alt="Imagen de ${hotel.name || 'Hotel'}" src="${hotel.img || hotel.image || 'https://placehold.co/192x96/cccccc/ffffff?text=Hotel'}" class="w-full h-24 object-cover rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/192x96/cccccc/ffffff?text=Hotel';"/>
+                <div class="p-2 text-left">
+                    <h4 class="text-xs font-semibold text-gray-900 mb-0.5 truncate">${hotel.name || 'Hotel Desconocido'}</h4>
+                    <div class="flex items-center text-xs mb-1">
+                        <div class="rating-dots mr-1">${ratingDotsHtml}</div>
+                        <span class="text-gray-500">(${(hotel.reviews ?? 0).toLocaleString('es-ES')})</span>
+                    </div>
+                    <p class="text-base font-bold text-gray-800">desde ${hotel.price ?? 0} €</p>
+                </div>`;
+            hotelCard.addEventListener('click', () => updateMainHotelContent(hotel));
+            return hotelCard;
+        }
+
+        function populateCarousels() {
+            const listSections = [
+                { id: 'popular-nearby-hotels-carousel', data: [...hotelsDB].sort((a,b) => (b.reviews ?? 0) - (a.reviews ?? 0)).slice(0, 10) },
+                { id: 'similar-sponsored-establishments-carousel', data: [...hotelsDB].filter(h => h.sponsored).sort(() => 0.5 - Math.random()).slice(0, 10) },
+            ];
+
+            listSections.forEach(sectionConfig => {
+                const container = document.getElementById(sectionConfig.id);
+                if (container) {
+                    container.innerHTML = '';
+                    sectionConfig.data.forEach(hotel => container.appendChild(createHotelListCard(hotel)));
+                    if (container.firstChild) {
+                        container.firstChild.classList.add('initial-hop-animation');
+                    }
+                    startAutoplay(sectionConfig.id);
+                    setupCarouselObserver(sectionConfig.id);
+                }
+            });
+
+            const carouselSections = [
+                { id: 'similar-hotels-carousel', data: [...hotelsDB].sort(() => 0.5 - Math.random()).slice(0, 10) },
+            ];
+
+            carouselSections.forEach(config => {
+                const container = document.getElementById(config.id);
+                if (container) {
+                    container.innerHTML = '';
+                    config.data.forEach(hotel => container.appendChild(createCompactHotelCard(hotel)));
+                    if (container.firstChild) {
+                        container.firstChild.classList.add('initial-hop-animation');
+                    }
+                    startAutoplay(config.id);
+                    setupCarouselObserver(config.id);
+                }
+            });
+        }
+        
+        const sections = document.querySelectorAll('main section[id]');
+        const navLinks = document.querySelectorAll('#section-nav a');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const header = document.querySelector('header');
+            const sectionNav = document.querySelector('#section-nav');
+            const navHeight = (header?.offsetHeight || 0) + (sectionNav?.offsetHeight || 0);
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - navHeight - 20) { 
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        document.querySelectorAll('.carousel-nav-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const carouselId = button.dataset.carouselId;
+                const direction = parseInt(button.dataset.direction, 10);
+                const carousel = document.getElementById(carouselId);
+                if (carousel) {
+                    const scrollAmount = (window.innerWidth < 640 ? carousel.querySelector('.interactive-card').offsetWidth + 16 : carousel.offsetWidth * 0.8) * direction;
+                    carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                }
+            });
+        });
+
+        const toggleBtn = document.getElementById('toggle-offers-btn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                document.getElementById('hidden-offers').classList.toggle('open');
+            });
+        }
+        
+        const showMoreDescBtn = document.getElementById('show-more-description-btn');
+        if(showMoreDescBtn) {
+            showMoreDescBtn.addEventListener('click', () => {
+                const content = document.getElementById('description-content');
+                const moreContent = document.getElementById('more-description');
+                if (content.classList.contains('max-h-40')) {
+                    content.classList.remove('max-h-40');
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    moreContent.classList.remove('hidden');
+                    showMoreDescBtn.innerHTML = 'Mostrar menos <i class="fas fa-chevron-up text-xs"></i>';
+                } else {
+                    content.style.maxHeight = null;
+                    content.classList.add('max-h-40');
+                    moreContent.classList.add('hidden');
+                    showMoreDescBtn.innerHTML = 'Mostrar más <i class="fas fa-chevron-right text-xs"></i>';
+                }
+            });
+        }
+
+        const showMoreNeighborhoodBtn = document.getElementById('show-more-neighborhood-btn');
+        if(showMoreNeighborhoodBtn) {
+            showMoreNeighborhoodBtn.addEventListener('click', () => {
+                const container = document.getElementById('neighborhood-description-container');
+                const icon = showMoreNeighborhoodBtn.querySelector('i');
+                const text = showMoreNeighborhoodBtn.querySelector('span');
+
+                if (container.classList.contains('max-h-20')) {
+                    container.classList.remove('max-h-20');
+                    container.style.maxHeight = container.scrollHeight + 'px';
+                    text.textContent = 'Mostrar menos';
+                    icon.classList.remove('fa-chevron-right');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    container.style.maxHeight = null;
+                    container.classList.add('max-h-20');
+                    text.textContent = 'Mostrar más';
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-right');
+                }
+            });
+        }
+        
+        const checkinCheckoutTrigger = document.getElementById('checkin-checkout-trigger');
+        const guestsTrigger = document.getElementById('guests-trigger');
+        const mainCheckinDisplay = document.getElementById('main-checkin-display');
+        const mainCheckoutDisplay = document.getElementById('main-checkout-display');
+        const mainGuestsDisplay = document.getElementById('main-guests-display');
+        const savedResultBar = document.getElementById('saved-result-bar');
+        const bookingInputsContainer = document.getElementById('booking-inputs-container');
+        const savedDatesGuestsSpan = document.getElementById('saved-dates-guests');
+        const editSelectionBtn = document.getElementById('edit-selection-btn');
+        
+        const calendarModal = document.getElementById('calendar-modal');
+        const calendarMonthsContainer = document.getElementById('calendar-months-container');
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month'); 
+        const clearDatesBtn = document.getElementById('clear-dates-btn');
+        const calendarCheckinDisplay = document.getElementById('calendar-checkin-display');
+        const calendarCheckoutDisplay = document.getElementById('calendar-checkout-display');
+        const calendarGuestsDisplay = document.getElementById('calendar-guests-display');
+        const calendarMonthYear = document.getElementById('calendar-month-year');
+        const tonightBtn = document.getElementById('tonight-btn');
+        const nextWeekendBtn = document.getElementById('next-weekend-btn');
+
+        const hotelTravelersModal = document.getElementById('hotel-travelers-modal');
+        const hotelAdultsCountSpan = hotelTravelersModal.querySelector('#adults-count-desktop');
+        const hotelChildrenCountSpan = hotelTravelersModal.querySelector('#children-count-desktop');
+
+        let selectedDeparture = null;
+        let selectedReturn = null;
+        let hotelAdultsCount = 1;
+        let hotelChildrenCount = 0;
+        let currentMonthDate = new Date();
+
+        function updateMainBookingDisplays() {
+            const formatOptions = { day: '2-digit', month: 'short' };
+            const mobileBookingDates = document.getElementById('mobile-booking-dates');
+            
+            if(mainCheckinDisplay) {
+                mainCheckinDisplay.textContent = selectedDeparture ? selectedDeparture.toLocaleDateString('es-ES', formatOptions) : 'Añadir fecha';
+                mainCheckinDisplay.classList.toggle('text-gray-500', !selectedDeparture);
+            }
+
+            if(mainCheckoutDisplay) {
+                mainCheckoutDisplay.textContent = selectedReturn ? selectedReturn.toLocaleDateString('es-ES', formatOptions) : 'Añadir fecha';
+                mainCheckoutDisplay.classList.toggle('text-gray-500', !selectedReturn);
+            }
+            
+            if (mobileBookingDates) {
+                if (selectedDeparture && selectedReturn) {
+                    const checkinStr = selectedDeparture.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                    const checkoutStr = selectedReturn.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                    mobileBookingDates.textContent = `${checkinStr} - ${checkoutStr}`;
+                    document.getElementById('sticky-footer-dates').textContent = `${checkinStr} - ${checkoutStr}`;
+                } else {
+                    mobileBookingDates.textContent = 'Selecciona fechas';
+                    document.getElementById('sticky-footer-dates').textContent = 'Selecciona fechas';
+                }
+            }
+
+
+            const totalGuests = hotelAdultsCount + hotelChildrenCount;
+            let guestsText = `${hotelAdultsCount} adulto${hotelAdultsCount > 1 ? 's' : ''}`;
+            if (hotelChildrenCount > 0) {
+                guestsText += `, ${hotelChildrenCount} niño${hotelChildrenCount > 1 ? 's' : ''}`;
+            }
+            if(mainGuestsDisplay) mainGuestsDisplay.textContent = `1 habitación, ${guestsText}`;
+            
+            // Desktop saved bar
+            if (bookingInputsContainer && savedResultBar && selectedDeparture && selectedReturn) {
+                const depStr = selectedDeparture.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                const retStr = selectedReturn.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+                savedDatesGuestsSpan.innerHTML = `Fechas: ${depStr} - ${retStr} &bull; Huéspedes: ${totalGuests}`;
+                bookingInputsContainer.classList.add('hidden');
+                savedResultBar.classList.remove('hidden');
+                savedResultBar.classList.add('show');
+            } else if (bookingInputsContainer && savedResultBar) {
+                bookingInputsContainer.classList.remove('hidden');
+                savedResultBar.classList.add('hidden');
+                savedResultBar.classList.remove('show');
+            }
+        }
+
+        function renderCalendarModal() {
+            if (!calendarMonthsContainer || !calendarMonthYear) return;
+            calendarMonthsContainer.innerHTML = '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            calendarMonthYear.textContent = currentMonthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            
+            const monthsToShow = window.innerWidth < 768 ? 1 : 2;
+
+            for (let i = 0; i < monthsToShow; i++) {
+                const monthDate = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + i, 1);
+                const monthEl = document.createElement('div');
+                if (monthsToShow > 1) {
+                    monthEl.innerHTML = `<h4 class="font-semibold text-center mb-2">${monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h4>`;
+                }
+                const gridEl = document.createElement('div');
+                gridEl.className = 'calendar-grid';
+                ['D', 'L', 'M', 'X', 'J', 'V', 'S'].forEach(day => gridEl.innerHTML += `<div class="calendar-day weekday">${day}</div>`);
+                
+                let firstDayOfMonth = monthDate.getDay();
+                for (let j = 0; j < firstDayOfMonth; j++) gridEl.appendChild(document.createElement('div'));
+
+                const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('div');
+                    const dayDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+                    dayEl.className = 'calendar-day';
+                    dayEl.textContent = day;
+                    dayEl.dataset.date = dayDate.toISOString().split('T')[0];
+                    
+                    const rand = Math.random(); 
+                    if (rand < 0.3) dayEl.classList.add('price-cheap'); else if (rand < 0.7) dayEl.classList.add('price-medium'); else dayEl.classList.add('price-expensive');
+                    
+                    if (dayDate < today) {
+                        dayEl.classList.add('disabled');
+                    } else {
+                        dayEl.addEventListener('click', () => handleDateClick(dayDate));
+                    }
+                    gridEl.appendChild(dayEl);
+                }
+                monthEl.appendChild(gridEl);
+                calendarMonthsContainer.appendChild(monthEl);
+            }
+            updateCalendarSelection();
+        }
+
+        function handleDateClick(date) {
+            if (!selectedDeparture || (selectedDeparture && selectedReturn)) {
+                selectedDeparture = date; 
+                selectedReturn = null;
+            } else if (date < selectedDeparture) {
+                selectedDeparture = date;
+            } else {
+                selectedReturn = date;
+            }
+            updateCalendarSelection();
+            if (selectedDeparture && selectedReturn) {
+                calendarModal.classList.remove('visible');
+                calendarModal.classList.add('hidden');
+                updateMainBookingDisplays();
+            }
+        }
+
+        function updateCalendarSelection() {
+            const formatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+            if (calendarCheckinDisplay) calendarCheckinDisplay.textContent = selectedDeparture ? selectedDeparture.toLocaleDateString('es-ES', formatOptions) : '--';
+            if (calendarCheckoutDisplay) calendarCheckoutDisplay.textContent = selectedReturn ? selectedReturn.toLocaleDateString('es-ES', formatOptions) : '--';
+            if (calendarGuestsDisplay) calendarGuestsDisplay.innerHTML = `<i class="fas fa-user-friends mr-1"></i> ${hotelAdultsCount + hotelChildrenCount}`;
+            
+            document.querySelectorAll('.calendar-day[data-date]').forEach(day => {
+                day.classList.remove('selected', 'in-range', 'range-start', 'range-end');
+                const dayDate = new Date(day.dataset.date + 'T00:00:00');
+                if (selectedDeparture && day.dataset.date === selectedDeparture.toISOString().split('T')[0]) day.classList.add('selected', 'range-start');
+                if (selectedReturn && day.dataset.date === selectedReturn.toISOString().split('T')[0]) day.classList.add('selected', 'range-end');
+                if (selectedDeparture && selectedReturn && dayDate > selectedDeparture && dayDate < selectedReturn) day.classList.add('in-range');
+            });
+        }
+
+        function handleHotelCounterClick(e) {
+            const button = e.target.closest('.counter-btn');
+            if (!button) return;
+
+            const type = button.dataset.type;
+            const action = button.dataset.action;
+
+            if (type === 'adults') {
+                if (action === 'increment') hotelAdultsCount++;
+                else if (action === 'decrement' && hotelAdultsCount > 1) hotelAdultsCount--;
+                if (hotelAdultsCountSpan) hotelAdultsCountSpan.textContent = hotelAdultsCount;
+                const decrementBtn = hotelTravelersModal.querySelector('[data-type="adults"][data-action="decrement"]');
+                if(decrementBtn) decrementBtn.disabled = hotelAdultsCount <= 1;
+            } else if (type === 'children') {
+                if (action === 'increment') hotelChildrenCount++;
+                else if (action === 'decrement' && hotelChildrenCount > 0) hotelChildrenCount--;
+                if (hotelChildrenCountSpan) hotelChildrenCountSpan.textContent = hotelChildrenCount;
+                const decrementBtn = hotelTravelersModal.querySelector('[data-type="children"][data-action="decrement"]');
+                if(decrementBtn) decrementBtn.disabled = hotelChildrenCount <= 0;
+            }
+            updateMainBookingDisplays();
+            updateCalendarSelection();
+        }
+        
+        const mobileCheckinCheckoutTrigger = document.getElementById('mobile-checkin-checkout-trigger');
+        if(mobileCheckinCheckoutTrigger) {
+            mobileCheckinCheckoutTrigger.addEventListener('click', (e) => {
+                if (e.target.tagName.toLowerCase() === 'button') {
+                    redirectToCheckout(e);
+                    return;
+                };
+                calendarModal.classList.remove('hidden');
+                calendarModal.classList.add('visible');
+                renderCalendarModal();
+            });
+        }
+        
+        const stickyFooterDates = document.getElementById('sticky-footer-dates');
+        if(stickyFooterDates) {
+             stickyFooterDates.addEventListener('click', () => {
+                calendarModal.classList.remove('hidden');
+                calendarModal.classList.add('visible');
+                renderCalendarModal();
+            });
+        }
+
+
+        if (checkinCheckoutTrigger) {
+            checkinCheckoutTrigger.addEventListener('click', () => {
+                calendarModal.classList.remove('hidden');
+                calendarModal.classList.add('visible');
+                renderCalendarModal();
+            });
+        }
+
+        if (guestsTrigger) {
+            guestsTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if(hotelTravelersModal) {
+                    hotelTravelersModal.classList.toggle('hidden');
+                    hotelTravelersModal.classList.toggle('visible');
+                    const adultDecrement = hotelTravelersModal.querySelector('[data-type="adults"][data-action="decrement"]');
+                    const childDecrement = hotelTravelersModal.querySelector('[data-type="children"][data-action="decrement"]');
+                    if(adultDecrement) adultDecrement.disabled = hotelAdultsCount <= 1;
+                    if(childDecrement) childDecrement.disabled = hotelChildrenCount <= 0;
+                }
+            });
+        }
+        
+        document.querySelectorAll('.modal-close-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal-overlay');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('visible');
+                }
+            })
+        });
+
+        if (clearDatesBtn) clearDatesBtn.addEventListener('click', () => { selectedDeparture = null; selectedReturn = null; renderCalendarModal(); updateMainBookingDisplays(); });
+        if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => { currentMonthDate.setMonth(currentMonthDate.getMonth() - 1); renderCalendarModal(); });
+        if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => { currentMonthDate.setMonth(currentMonthDate.getMonth() + 1); renderCalendarModal(); }); 
+        if (tonightBtn) tonightBtn.addEventListener('click', () => {
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            selectedDeparture = today;
+            selectedReturn = tomorrow;
+            updateMainBookingDisplays();
+            calendarModal.classList.remove('visible');
+            calendarModal.classList.add('hidden');
+        });
+        if (nextWeekendBtn) nextWeekendBtn.addEventListener('click', () => {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+            const nextFriday = new Date(today);
+            nextFriday.setDate(today.getDate() + daysUntilFriday);
+            const nextSunday = new Date(nextFriday);
+            nextSunday.setDate(nextFriday.getDate() + 2);
+            selectedDeparture = nextFriday;
+            selectedReturn = nextSunday;
+            updateMainBookingDisplays();
+            calendarModal.classList.remove('visible');
+            calendarModal.classList.add('hidden');
+        });
+
+        if (hotelTravelersModal) hotelTravelersModal.addEventListener('click', handleHotelCounterClick);
+
+        document.addEventListener('click', function(event) {
+            if (guestsTrigger && !guestsTrigger.contains(event.target) && hotelTravelersModal && !hotelTravelersModal.contains(event.target)) {
+                hotelTravelersModal.classList.add('hidden');
+                hotelTravelersModal.classList.remove('visible');
+                updateMainBookingDisplays();
+            }
+        });
+
+        if (editSelectionBtn) {
+            editSelectionBtn.addEventListener('click', () => {
+                checkinCheckoutTrigger.click();
+            });
+        }
+
+        function redirectToCheckout(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!selectedDeparture || !selectedReturn) {
+                showNotification('Por favor, selecciona las fechas de llegada y salida.', 'error');
+                
+                const bookingSection = document.getElementById('booking-section') || document.getElementById('booking-section-mobile');
+                if (bookingSection) {
+                    bookingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    bookingSection.style.transition = 'background-color 0.3s';
+                    bookingSection.style.backgroundColor = '#fffbeb'; 
+                    setTimeout(() => {
+                        bookingSection.style.backgroundColor = ''; 
+                    }, 2000);
+                }
+
+                setTimeout(() => {
+                    calendarModal.classList.remove('hidden');
+                    calendarModal.classList.add('visible');
+                    renderCalendarModal();
+                }, 600); 
+
+                return;
+            }
+
+            if (!currentDisplayedHotel) {
+                showNotification('Error: No se ha seleccionado ningún hotel.', 'error');
+                return;
+            }
+
+            showDevelopmentPopup(() => {
+                sessionStorage.setItem('hotelBookingDetails', JSON.stringify({
+                    hotelId: currentDisplayedHotel.id,
+                    hotelName: currentDisplayedHotel.name,
+                    hotelImage: currentDisplayedHotel.img || currentDisplayedHotel.image, 
+                    price: currentDisplayedHotel.price,
+                    checkin: selectedDeparture.toISOString().split('T')[0],
+                    checkout: selectedReturn.toISOString().split('T')[0],
+                    adults: hotelAdultsCount,
+                    children: hotelChildrenCount
+                }));
+                window.location.href = `pagocheckout.html`;
+            });
+        }
+
+        const bookDirectBtn = document.getElementById('book-direct-btn');
+        const bookNowDesktopBtn = document.getElementById('book-now-desktop-btn');
+        const stickyFooterOfferBtn = document.getElementById('sticky-footer-offer-btn');
+
+        if (bookDirectBtn) {
+            bookDirectBtn.addEventListener('click', redirectToCheckout);
+        }
+
+        if (bookNowDesktopBtn) {
+            bookNowDesktopBtn.addEventListener('click', redirectToCheckout);
+        }
+        
+        if (stickyFooterOfferBtn) {
+            stickyFooterOfferBtn.href = '#';
+            stickyFooterOfferBtn.addEventListener('click', redirectToCheckout);
+        }
+
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('hidden');
+            loader.addEventListener('transitionend', function() {
+                loader.remove();
+            }, { once: true });
+        }
+        
+        const storedPropertyData = sessionStorage.getItem('selectedPropertyData'); 
+
+        if (storedPropertyData) {
+            try {
+                const hotelFromSession = JSON.parse(storedPropertyData);
+                const fullHotelData = hotelsDB.find(h => h.id === hotelFromSession.id) || 
+                                      hotelsDB.find(h => h.img === (hotelFromSession.img || hotelFromSession.image)) || 
+                                      hotelFromSession;
+                updateMainHotelContent(fullHotelData);
+            } catch (e) {
+                console.error('Error parsing stored property data from sessionStorage:', e);
+                const initialHotel = hotelsDB.find(h => h.id === 11) || hotelsDB[0];
+                updateMainHotelContent(initialHotel);
+            }
+        } else {
+            const initialHotel = hotelsDB.find(h => h.id === 11) || hotelsDB[0];
+            updateMainHotelContent(initialHotel);
+        }
+        populateCarousels();
+        updateMainBookingDisplays();
+
+        // --- Mobile Menu Logic ---
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMobileMenuBtn = document.getElementById('close-mobile-menu');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+
+        function openMenu() {
+            if (mobileMenu && mobileMenuOverlay) {
+                mobileMenu.classList.remove('-translate-x-full');
+                mobileMenuOverlay.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function closeMenu() {
+            if (mobileMenu && mobileMenuOverlay) {
+                mobileMenu.classList.add('-translate-x-full');
+                mobileMenuOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openMenu);
+        }
+        if (closeMobileMenuBtn) {
+            closeMobileMenuBtn.addEventListener('click', closeMenu);
+        }
+        if (mobileMenuOverlay) {
+            mobileMenuOverlay.addEventListener('click', closeMenu);
+        }
+        
+        // --- Modal Logic ---
+        const amenitiesModal = document.getElementById('amenities-modal');
+        const rulesModal = document.getElementById('rules-modal');
+        const safetyModal = document.getElementById('safety-modal');
+        const cancellationModal = document.getElementById('cancellation-modal');
+        const reviewsModal = document.getElementById('reviews-modal');
+
+        function openModal(modal) {
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.add('visible'), 10); // Delay for transition
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+
+        function closeModal(modal) {
+            if (modal) {
+                modal.classList.remove('visible');
+                 modal.addEventListener('transitionend', () => {
+                    modal.classList.add('hidden');
+                    if (!document.querySelector('.modal-overlay.visible')) {
+                       document.body.classList.remove('overflow-hidden');
+                    }
+                }, { once: true });
+            }
+        }
+
+        document.getElementById('show-amenities-btn')?.addEventListener('click', () => openModal(amenitiesModal));
+        
+        document.getElementById('show-rules-btn')?.addEventListener('click', () => {
+            const body = document.getElementById('rules-modal-body');
+            body.innerHTML = `
+                <h3 class="font-bold text-xl mb-4">Llegada y salida</h3>
+                <div class="flex items-center gap-4 mb-2"><i class="far fa-clock w-6"></i><span>Llegada a partir de las 15:00</span></div>
+                <div class="flex items-center gap-4 mb-6"><i class="far fa-clock w-6"></i><span>Salida antes de las 12:00</span></div>
+                <h3 class="font-bold text-xl mb-4">Durante tu estancia</h3>
+                <div class="flex items-center gap-4 mb-2"><i class="fas fa-users w-6"></i><span>Máximo 3 viajeros</span></div>
+                <div class="flex items-center gap-4 mb-2"><i class="fas fa-dog w-6"></i><span>No se admiten mascotas</span></div>
+                <div class="flex items-center gap-4 mb-2"><i class="fas fa-moon w-6"></i><span>Horas de silencio de 22:00 a 7:00</span></div>
+                <div class="flex items-center gap-4 mb-2"><i class="fas fa-glass-cheers w-6"></i><span>No se permiten fiestas ni eventos</span></div>
+                <div class="flex items-center gap-4 mb-2"><i class="fas fa-camera w-6"></i><span>No está permitido hacer fotografías con fines comerciales</span></div>
+                <div class="flex items-center gap-4 mb-6"><i class="fas fa-smoking w-6"></i><span>Apto para fumadores</span></div>
+            `;
+            openModal(rulesModal);
+        });
+
+        document.getElementById('show-safety-btn')?.addEventListener('click', () => {
+             const body = document.getElementById('safety-modal-body');
+            body.innerHTML = `
+                <h3 class="font-bold text-xl mb-4">Dispositivos de seguridad</h3>
+                 <div class="flex items-center gap-4 mb-2"><i class="fas fa-smog w-6"></i><span>Detector de monóxido de carbono instalado</span></div>
+                 <div class="flex items-center gap-4 mb-6"><i class="fas fa-fire-extinguisher w-6"></i><span>Detector de humo instalado</span></div>
+                 <h3 class="font-bold text-xl mb-4">Información de la propiedad</h3>
+                 <div class="flex items-center gap-4 mb-2"><i class="fas fa-person-walking-arrow-loop-left w-6"></i><span>Hay que subir escaleras</span></div>
+            `;
+            openModal(safetyModal);
+        });
+
+        document.getElementById('show-cancellation-btn')?.addEventListener('click', () => {
+            const body = document.getElementById('cancellation-modal-body');
+            body.innerHTML = `
+                <h3 class="font-bold text-xl mb-4">Política de cancelación</h3>
+                <p class="mb-6">Comprueba si estás conforme con la política de este anfitrión. En casos excepcionales, podrías optar a un reembolso en virtud de la <a href="#" class="underline font-semibold">Política de Anulación por Circunstancias Extraordinarias de Airbnb</a>.</p>
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="font-semibold">Antes del 30 oct 15:00</p>
+                        </div>
+                        <p class="font-semibold">Reembolso completo</p>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">Recibe un reembolso del 100 % de lo que pagaste.</p>
+                </div>
+                 <div class="border-t pt-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="font-semibold">Antes del 31 oct 15:00</p>
+                        </div>
+                        <p class="font-semibold">Reembolso parcial</p>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">Recibirás el importe de todas las noches, excepto de la primera. No se te reembolsará la comisión de servicio.</p>
+                </div>
+                 <div class="border-t pt-4">
+                    <a href="#" class="font-semibold underline">Más información sobre las políticas de cancelación</a>
+                 </div>
+            `;
+            openModal(cancellationModal);
+        });
+
+        [amenitiesModal, rulesModal, safetyModal, cancellationModal, reviewsModal].forEach(modal => {
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.closest('.modal-close-btn')) {
+                    closeModal(modal);
+                }
+            });
+        });
+        
+        // --- START: NEW REVIEWS LOGIC ---
+        function populateReviewsGrid(reviewsData) {
+            const container = document.getElementById('reviews-grid');
+            if (!container) return;
+            container.innerHTML = '';
+            reviewsData.slice(0, 6).forEach(review => {
+                container.appendChild(createReviewSnippetCard(review));
+            });
+        }
+
+        function createReviewSnippetCard(review) {
+            const card = document.createElement('div');
+            card.className = 'border border-gray-200 rounded-xl p-6 space-y-4 flex-shrink-0 w-full';
+            
+            let starsHtml = '';
+            for (let i = 0; i < 5; i++) {
+                 starsHtml += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" class="inline-block h-4 w-4 ${i < review.rating ? 'text-black' : 'text-gray-300'}"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex items-center gap-2 text-sm">
+                    <div class="flex items-center gap-0.5">${starsHtml}</div>
+                    <span class="text-gray-600">·</span>
+                    <span class="text-gray-600 font-semibold">${review.date}</span>
+                </div>
+                <p class="text-gray-700 leading-relaxed review-text-clamp">${review.text}</p>
+                <div class="flex items-center gap-3 pt-2">
+                    <img src="${review.avatar}" alt="Avatar de ${review.author}" class="w-10 h-10 rounded-full object-cover">
+                    <div>
+                        <p class="font-semibold text-sm">${review.author}</p>
+                        <p class="text-xs text-gray-500">${review.location}</p>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function createDetailedReviewCard(review) {
+            const card = document.createElement('div');
+            card.className = 'py-6 border-b border-gray-200';
+            
+            let starsHtml = '';
+            for (let i = 0; i < 5; i++) {
+                 starsHtml += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" class="inline-block h-3 w-3 ${i < review.rating ? 'text-black' : 'text-gray-300'}"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg>`;
+            }
+
+            card.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <img src="${review.avatar}" alt="Avatar de ${review.author}" class="w-12 h-12 rounded-full object-cover">
+                    <div>
+                        <p class="font-semibold">${review.author}</p>
+                        <p class="text-sm text-gray-500">${review.location}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm my-3">
+                    <div class="flex items-center gap-0.5">${starsHtml}</div>
+                    <span class="text-gray-600">·</span>
+                    <span class="text-gray-600 font-semibold">${review.date}</span>
+                </div>
+                <p class="text-gray-800 leading-relaxed">${review.text}</p>
+            `;
+            return card;
+        }
+        
+        function getDetailedRatingsHTML() {
+            const ratings = [
+                { name: 'Limpieza', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M24 0v6h-4.3c.13 1.4.67 2.72 1.52 3.78l.2.22-1.5 1.33a9.05 9.05 0 0 1-2.2-5.08c-.83.38-1.32 1.14-1.38 2.2v4.46l4.14 4.02a5 5 0 0 1 1.5 3.09l.01.25.01.25v8.63a3 3 0 0 1-2.64 2.98l-.18.01-.21.01-12-.13A3 3 0 0 1 4 29.2L4 29.02v-8.3a5 5 0 0 1 1.38-3.45l.19-.18L10 12.9V8.85l-4.01-3.4.02-.7A5 5 0 0 1 10.78 0H11zm-5.03 25.69a8.98 8.98 0 0 1-6.13-2.41l-.23-.23A6.97 6.97 0 0 0 6 21.2v7.82c0 .51.38.93.87 1H7l11.96.13h.13a1 1 0 0 0 .91-.88l.01-.12v-3.52c-.34.04-.69.06-1.03.06zM17.67 2H11a3 3 0 0 0-2.92 2.3l-.04.18-.01.08 3.67 3.1h2.72l.02-.1a4.29 4.29 0 0 1 3.23-3.4zM30 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-3-2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-5 0h-2.33v2H22zm8-2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM20 20.52a3 3 0 0 0-.77-2l-.14-.15-4.76-4.61v-4.1H12v4.1l-5.06 4.78a3 3 0 0 0-.45.53 9.03 9.03 0 0 1 7.3 2.34l.23.23A6.98 6.98 0 0 0 20 23.6z"></path></svg>' },
+                { name: 'Veracidad', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M16 1a15 15 0 1 1 0 30 15 15 0 0 1 0-30zm0 2a13 13 0 1 0 0 26 13 13 0 0 0 0-26zm7 7.59L24.41 12 13.5 22.91 7.59 17 9 15.59l4.5 4.5z"></path></svg>' },
+                { name: 'Llegada', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M16.84 27.16v-3.4l-.26.09c-.98.32-2.03.51-3.11.55h-.7A11.34 11.34 0 0 1 1.72 13.36v-.59A11.34 11.34 0 0 1 12.77 1.72h.59c6.03.16 10.89 5.02 11.04 11.05V13.45a11.3 11.3 0 0 1-.9 4.04l-.13.3 7.91 7.9v5.6H25.7l-4.13-4.13zM10.31 7.22a3.1 3.1 0 1 1 0 6.19 3.1 3.1 0 0 1 0-6.2zm0 2.06a1.03 1.03 0 1 0 0 2.06 1.03 1.03 0 0 0 0-2.06zM22.43 25.1l4.12 4.13h2.67v-2.67l-8.37-8.37.37-.68.16-.3c.56-1.15.9-2.42.96-3.77v-.64a9.28 9.28 0 0 0-9-9h-.55a9.28 9.28 0 0 0-9 9v.54a9.28 9.28 0 0 0 13.3 8.1l.3-.16 1.52-.8v4.62z"></path></svg>' },
+                { name: 'Comunicación', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; fill: none; height: 24px; width: 24px; stroke: currentcolor; stroke-width: 2; overflow: visible;"><path fill="none" d="M26 3a4 4 0 0 1 4 4v14a4 4 0 0 1-4 4h-6.32L16 29.5 12.32 25H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z"></path></svg>' },
+                { name: 'Ubicación', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M30.95 3.81a2 2 0 0 0-2.38-1.52l-7.58 1.69-10-2-8.42 1.87A1.99 1.99 0 0 0 1 5.8v21.95a1.96 1.96 0 0 0 .05.44 2 2 0 0 0 2.38 1.52l7.58-1.69 10 2 8.42-1.87A1.99 1.99 0 0 0 31 26.2V4.25a1.99 1.99 0 0 0-.05-.44zM12 4.22l8 1.6v21.96l-8-1.6zM3 27.75V5.8l-.22-.97.22.97 7-1.55V26.2zm26-1.55-7 1.55V5.8l7-1.55z"></path></svg>' },
+                { name: 'Calidad', score: '5,0', icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 24px; width: 24px; fill: currentcolor;"><path d="M16.17 2a3 3 0 0 1 1.98.74l.14.14 11 11a3 3 0 0 1 .14 4.1l-.14.14L18.12 29.3a3 3 0 0 1-4.1.14l-.14-.14-11-11A3 3 0 0 1 2 16.37l-.01-.2V5a3 3 0 0 1 2.82-3h11.35zm0 2H5a1 1 0 0 0-1 .88v11.29a1 1 0 0 0 .2.61l.1.1 11 11a1 1 0 0 0 1.31.08l.1-.08L27.88 16.7a1 1 0 0 0 .08-1.32l-.08-.1-11-11a1 1 0 0 0-.58-.28L16.17 4zM9 6a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"></path></svg>' },
+            ];
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">';
+            
+            // Desktop/Modal view
+            let desktopHtml = '<div class="hidden md:grid grid-cols-2 gap-x-12 gap-y-4">';
+            ratings.forEach(rating => {
+                desktopHtml += `
+                    <div class="flex justify-between items-center text-sm">
+                        <p>${rating.name}</p>
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 bg-gray-200 rounded-full h-1"><div class="bg-gray-800 h-1 rounded-full" style="width: 100%;"></div></div>
+                            <p class="font-semibold">${rating.score}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            desktopHtml += '</div>';
+
+            // Mobile view
+            let mobileHtml = '<div class="md:hidden grid grid-cols-2 gap-4">';
+             ratings.slice(1, 5).forEach(rating => {
+                mobileHtml += `
+                    <div class="p-4 border rounded-lg text-center">
+                        <div class="h-8 flex items-center justify-center">${rating.icon}</div>
+                        <p class="text-xs font-semibold mt-2">${rating.name}</p>
+                        <p class="text-xs text-gray-600">${rating.score}</p>
+                    </div>
+                `;
+            });
+            mobileHtml += '</div>';
+
+            return desktopHtml + mobileHtml;
+        }
+
+        function populateReviewsModal(hotel) {
+            const modalBody = document.getElementById('reviews-modal-body');
+            if (!modalBody) return;
+
+            const overallRating = hotel.rating || 0;
+            const totalReviews = hotel.reviews || 0;
+            
+            const detailedRatingsBars = `
+                <div class="flex justify-between items-center mb-1"><p>Valoración general</p><div class="flex items-center gap-2"><div class="w-24 bg-gray-200 rounded-full h-1"><div class="bg-gray-800 h-1 rounded-full" style="width: 100%;"></div></div><p class="text-xs font-semibold">5,0</p></div></div>
+            `;
+
+            modalBody.innerHTML = `
+                <div class="sticky top-0 bg-white z-10 px-4 pt-4 md:pt-0 md:px-0">
+                    <div class="flex items-center gap-4 py-4 border-b">
+                        <i class="fas fa-star text-2xl"></i>
+                        <h2 class="text-2xl font-bold">${overallRating.toFixed(1)} · ${totalReviews} evaluaciones</h2>
+                    </div>
+                    <div class="py-6 border-b">
+                        ${getDetailedRatingsHTML()}
+                    </div>
+                </div>
+
+                <div class="px-4 md:px-0 mt-6">
+                     ${hotel.reviewsData.map(review => createDetailedReviewCard(review).outerHTML).join('')}
+                </div>
+            `;
+        }
+
+        document.getElementById('show-all-reviews-btn')?.addEventListener('click', () => {
+            if (currentDisplayedHotel) {
+                populateReviewsModal(currentDisplayedHotel);
+                openModal(reviewsModal);
+            }
+        });
+        // --- END: NEW REVIEWS LOGIC ---
+
+    });
+    </script>
+</body>
+</html>

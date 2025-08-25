@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>GuacamayaFly Finder: Busca Hoteles y Vuelos</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        // Configuración de Tailwind CSS con colores personalizados de GuacamayaFly
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'guacamayafly-green': '#00c897',
+                        'guacamayafly-dark-green': '#00b386',
+                        'guacamayafly-orange': '#FF7F00',
+                        'guacamayafly-dark-orange': '#E67300',
+                        'brand-green': '#00a680',
+                    },
+                    boxShadow: {
+                        'custom-light': '0 4px 12px rgba(0, 0, 0, 0.05)',
+                        'custom-medium': '0 6px 20px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Iconos y Fuentes -->
+    <link rel="shortcut icon" type="image/x-icon" href="https://storage.googleapis.com/a1aa/image/upload/v1719868571/logo-6.svg" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+    <style>
+        /* Estilos Globales y de Componentes */
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: white; color: #1a202c; margin: 0; min-height: 100vh; position: relative; overflow-x: hidden; z-index: 0; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Loader */
+        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 1; transition: opacity 1s ease-out; }
+        .loader-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loader-plane { font-size: 4rem; color: #FF7F00; animation: fly-across 3s infinite ease-in-out; }
+        @keyframes fly-across { 0% { transform: translateX(-100vw); } 50% { transform: translateX(0); } 100% { transform: translateX(100vw); } }
+        
+        /* Barra de Búsqueda */
+        .search-form-container { display: flex; flex-direction: column; gap: 0.75rem; max-width: 1100px; margin: 0 auto; transition: background-color: 0.3s ease; }
+        @media (min-width: 1024px) { .search-form-container { flex-direction: row; align-items: center; background-color: white; border-radius: 9999px; padding: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } }
+        .search-form-container.flights-active { background-color: #f2f2f2; } /* Color gris claro para vuelos */
+        .search-input-group { position: relative; flex: 1; display: flex; align-items: center; padding: 0.75rem 1rem; background-color: white; border-radius: 9999px; border: 1px solid #d1d5db; }
+        @media (min-width: 1024px) { .search-input-group { border: none; background-color: transparent; } .search-input-group:not(:last-of-type) { border-right: 1px solid #e5e7eb; } }
+        .search-input-group i { color: #6b7280; margin-right: 0.75rem; }
+        .search-input-group input, .search-input-group span { border: none; outline: none; background: transparent; width: 100%; }
+        .search-main-button { background-color: #FF7F00; color: white; border-radius: 9999px; padding: 0.8rem; display: flex; align-items: center; justify-content: center; font-weight: 600; transition: background-color 0.2s, transform 0.1s ease; }
+        .search-main-button:hover { background-color: #E67300; }
+        .search-main-button:active { transform: scale(0.95); }
+
+        /* Autocomplete Suggestions */
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; max-height: 250px; overflow-y: auto; }
+        .suggestion-item { padding: 0.75rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; font-size: 1rem; }
+        .suggestion-item:hover { background-color: #f3f4f6; }
+        .suggestion-item .iata-code { font-weight: 600; color: #4b5563; }
+
+        /* Carrusel UI/UX Mejorado */
+        .carousel-container { position: relative; }
+        .carousel-nav-button { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(255, 255, 255, 0.9); border-radius: 9999px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #1a202c; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.2s ease-in-out; z-index: 10; cursor: pointer; }
+        .carousel-nav-button:hover { background-color: white; transform: translateY(-50%) scale(1.1); }
+        .carousel-nav-button.left { left: -22px; }
+        .carousel-nav-button.right { right: -22px; }
+        @media (max-width: 767px) { .carousel-nav-button { display: none; } }
+        .carousel-content-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .carousel-content-wrapper::-webkit-scrollbar { display: none; }
+        .carousel-content-wrapper > * { scroll-snap-align: start; flex-shrink: 0; }
+
+        /* Tarjeta Interactiva UI/UX */
+        .interactive-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .interactive-card:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08); }
+
+        /* Modales */
+        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 10000; }
+        .notification-popup { background-color: #ef4444; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateX(120%); transition: transform 0.5s ease-in-out; margin-top: 10px; }
+        .notification-popup.show { transform: translateX(0); }
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 5000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .modal-container { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 800px; transform: scale(0.95); transition: transform 0.3s ease; display: flex; flex-direction: column; }
+        .modal-overlay.visible .modal-container { transform: scale(1); }
+        
+        /* Popover (Viajeros y Equipaje) */
+        .popover-modal { position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 320px; background-color: white; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 6000; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; }
+        .popover-modal.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        .popover-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .counter-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #d1d5db; display: flex; align-items: center; justify-content: center; cursor: pointer; background-color: white; color: #4b5563; font-size: 1.25rem; }
+        .counter-btn:disabled { cursor: not-allowed; background-color: #f3f4f6; color: #9ca3af; }
+
+        /* Estilos del Modal de Calendario Mejorado */
+        .calendar-modal .modal-container {
+            padding: 0;
+            max-height: 90vh;
+            overflow: hidden;
+            max-width: 400px;
+            display: flex; /* Added for flex column layout */
+            flex-direction: column; /* Added for flex column layout */
+        }
+        .calendar-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .calendar-modal-top-info {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+        }
+        .info-box {
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            flex: 1;
+        }
+        .info-box span {
+            display: block;
+        }
+        .info-box .label {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .info-box .value {
+            font-weight: 600;
+        }
+        .calendar-modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            flex-grow: 1; /* Allows body to take available space */
+        }
+        .calendar-modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: white;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            flex-shrink: 0; /* Prevents shrinking */
+        }
+        .price-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+        .price-legend > div { display: flex; align-items: center; gap: 0.5rem; }
+        .price-legend .color-box { width: 1rem; height: 1rem; border-radius: 0.25rem; }
+        .quick-select-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .quick-select-buttons button {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .quick-select-buttons button:hover { background-color: #f3f4f6; }
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .calendar-months { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+        @media (min-width: 640px) { .calendar-months { grid-template-columns: 1fr 1fr; } }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; place-items: center; }
+        .calendar-day { width: 38px; height: 38px; display: flex; justify-content: center; align-items: center; border-radius: 50%; cursor: pointer; transition: all 0.2s; }
+        .calendar-day.weekday { font-weight: 600; font-size: 0.8rem; color: #4a5568; cursor: default; }
+        .calendar-day.disabled { color: #cbd5e0; cursor: not-allowed; text-decoration: line-through; }
+        .calendar-day:not(.disabled):not(.weekday):hover { background-color: #f0f0f0; }
+        .calendar-day.price-cheap { background-color: #d1fae5; color: #065f46; }
+        .calendar-day.price-medium { background-color: #fef3c7; color: #92400e; }
+        .calendar-day.price-expensive { background-color: #fee2e2; color: #991b1b; }
+        .calendar-day.selected { background-color: #2563eb !important; color: white !important; font-weight: bold; }
+        .calendar-day.in-range { background-color: #dbeafe; border-radius: 0; }
+        .calendar-day.range-start { border-top-left-radius: 50%; border-bottom-left-radius: 50%; }
+        .calendar-day.range-end { border-top-right-radius: 50%; border-bottom-right-radius: 50%; }
+        
+        /* Rating dots for general cards (like hotels) */
+        .rating-dots span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #e0e0e0; margin-right: 2px; }
+        .rating-dots span.filled { background-color: #00a680; }
+
+        /* Filter Panel Specific Styles */
+        #filter-panel {
+            position: fixed;
+            top: 0;
+            right: 0; /* Changed from left to right for slide-in */
+            height: 100%;
+            width: 80%; /* Adjust width for mobile */
+            max-width: 320px; /* Max width for filter panel on mobile */
+            background-color: white;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.15); /* Shadow on the left side */
+            z-index: 5000;
+            transform: translateX(100%); /* Start off-screen to the right */
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #filter-panel.active {
+            transform: translateX(0); /* Slide in */
+        }
+        #filter-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 4999; /* Behind filter panel */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #filter-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Desktop Filter Sidebar */
+        @media (min-width: 1024px) {
+            #filter-panel {
+                position: static; /* Static positioning on desktop */
+                width: auto; /* Auto width for flex layout */
+                max-width: none; /* No max-width */
+                box-shadow: none; /* No shadow */
+                transform: translateX(0); /* Always visible */
+                flex-shrink: 0; /* Prevent shrinking */
+                border-right: 1px solid #e2e8f0; /* Light border on the right of sidebar */
+                padding-right: 1.5rem; /* Add some padding to the right of the sidebar */
+            }
+            #filter-overlay, #open-filters-btn {
+                display: none !important; /* Hide on desktop */
+            }
+        }
+        
+        /* Floating Filter Button for Mobile */
+        #open-filters-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 500; /* Above regular content, below filter panel */
+            background-color: #00c897; /* guacamayafly-green */
+            color: white;
+            padding: 1rem 1.25rem; /* More padding for a comfortable tap target */
+            border-radius: 9999px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #open-filters-btn:hover {
+            background-color: #00b386; /* guacamayafly-dark-green */
+            transform: translateY(-2px);
+        }
+        @media (min-width: 1024px) {
+            #open-filters-btn {
+                display: none; /* Hide on desktop */
+            }
+        }
+
+        /* Hotel Card Specific Styles (Improved) */
+        .hotel-card-article {
+            display: flex;
+            flex-direction: column; /* Default to column for mobile */
+            border-radius: 0.75rem; /* rounded-xl */
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* shadow-lg */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: white;
+            border: 1px solid #e2e8f0; /* Subtle border */
+        }
+        @media (min-width: 768px) { /* Tablet and Desktop */
+            .hotel-card-article {
+                flex-direction: row; /* Horizontal layout */
+                height: 200px; /* Fixed height for consistency */
+            }
+        }
+        .hotel-card-article:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .hotel-card-image-container {
+            position: relative;
+            width: 100%;
+            height: 180px; /* Fixed height for consistency on mobile */
+            flex-shrink: 0; /* Prevent image from shrinking */
+        }
+        @media (min-width: 768px) {
+            .hotel-card-image-container {
+                width: 250px; /* Fixed width for desktop */
+                height: auto; /* Auto height to fill parent */
+            }
+        }
+        .hotel-card-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .hotel-card-content {
+            flex: 1;
+            padding: 1.25rem; /* p-5 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hotel-card-title {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* Poppins SemiBold */
+            color: #1a202c;
+            margin-bottom: 0.25rem;
+        }
+        .hotel-card-stars {
+            color: #FFBF00; /* Yellow for stars */
+            font-size: 0.875rem; /* text-sm */
+            margin-bottom: 0.5rem;
+        }
+        .hotel-card-mentions {
+            font-size: 0.75rem; /* text-xs */
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+        }
+        .hotel-card-price {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* Poppins Bold */
+            color: #1a202c;
+            text-align: right;
+        }
+        .hotel-card-price-details {
+            font-size: 0.75rem; /* text-xs */
+            color: #6b7280;
+            text-align: right;
+            margin-top: 0.25rem;
+        }
+        .hotel-card-link {
+            font-size: 0.875rem; /* text-sm */
+            color: #2563eb; /* blue-600 */
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .hotel-card-link:hover {
+            color: #1d4ed8; /* blue-700 */
+            text-decoration: underline;
+        }
+        .hotel-card-button {
+            background-color: #00c897; /* guacamayafly-green */
+            color: white;
+            font-weight: 600; /* Poppins SemiBold */
+            padding: 0.6rem 1.2rem; /* py-2 px-4 */
+            border-radius: 9999px; /* rounded-full */
+            transition: background-color 0.2s;
+            font-size: 0.875rem; /* text-sm */
+        }
+        .hotel-card-button:hover {
+            background-color: #00b386; /* guacamayafly-dark-green */
+        }
+
+        /* Layout adjustments for main content */
+        #results-container-wrapper { /* New wrapper for results and filters */
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem; /* px-6 */
+            display: flex;
+            flex-direction: column; /* Column on mobile */
+            gap: 2rem; /* Gap between filters and results */
+        }
+        @media (min-width: 1024px) {
+            #results-container-wrapper {
+                flex-direction: row; /* Row on desktop */
+                align-items: flex-start; /* Align to top */
+            }
+        }
+
+        #search-results-list {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column on mobile */
+            gap: 1.5rem; /* Gap between cards */
+        }
+        @media (min-width: 768px) {
+            #search-results-list {
+                grid-template-columns: 1fr ; /* Two columns on tablet */
+            }
+        }
+        @media (min-width: 1024px) {
+            #search-results-list {
+                grid-template-columns: 1fr ; /* Two columns on larger desktop for wider cards */
+            }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+
+    <!-- Pop-up de Sitio en Desarrollo -->
+    <div id="development-popup-overlay" class="modal-overlay hidden" style="z-index: 12000;">
+        <div class="modal-container bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <div class="text-yellow-500 mb-4">
+                <i class="fas fa-exclamation-triangle fa-3x"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Sitio Web en Desarrollo</h2>
+            <p class="text-gray-600 mb-6">
+                Los precios mostrados son de prueba y este sitio web está actualmente en desarrollo. Por favor, consulte con un agente antes de realizar cualquier pago o reserva.
+            </p>
+            <button id="development-popup-close" class="bg-blue-600 text-white font-semibold px-8 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- Elementos de UI: Notificaciones, Loader -->
+    <div id="notification-container"></div>
+    <div id="loader" class="loader-overlay"><i class="fas fa-plane loader-plane"></i></div>
+    
+    <!-- Modal del Calendario Principal -->
+    <div id="calendar-modal" class="modal-overlay hidden calendar-modal">
+        <div class="modal-container">
+            <div class="calendar-modal-header">
+                 <h3 class="font-semibold text-lg">Selecciona fechas</h3>
+                 <button id="close-calendar-modal-x" class="p-2 rounded-full hover:bg-gray-200 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="calendar-modal-top-info">
+                <div class="info-box">
+                    <span class="label">Check-in</span>
+                    <span id="calendar-checkin-display" class="value">--</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Check-out</span>
+                    <span id="calendar-checkout-display" class="value">--</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Huéspedes</span>
+                    <span id="calendar-guests-display" class="value">--</span>
+                </div>
+            </div>
+            <div class="calendar-modal-body">
+                <div class="flex items-center gap-2 text-sm text-gray-700 mb-4">
+                    <i class="far fa-calendar-alt"></i>
+                    <p>Selecciona fechas para encontrar los mejores precios para tu viaje</p>
+                </div>
+                <div class="calendar-header">
+                    <button id="prev-month" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                    <h4 id="calendar-month-year" class="font-semibold text-lg"></h4>
+                    <button id="next-month" class="p-2 rounded-full hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-months" id="calendar-months-container"></div>
+                <div class="price-legend">
+                    <div><div class="color-box" style="background-color: #d1fae5;"></div><span>Más barato</span></div>
+                    <div><div class="color-box" style="background-color: #fee2e2;"></div><span>Más caro</span></div>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-2">Según los precios promedio</p>
+                 <div class="quick-select-buttons">
+                    <button id="tonight-btn">Esta noche</button>
+                    <button id="next-weekend-btn">El próximo fin de semana</button>
+                </div>
+            </div>
+            <div class="calendar-modal-footer">
+                <button id="clear-dates-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold">Limpiar</button>
+                <button id="close-calendar-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">Solicitar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <header class="flex items-center justify-between px-6 py-4 max-w-[1200px] mx-auto">
+        <div class="flex items-center space-x-2">
+            <img alt="Logo UACAMAYAFLY" height="32" src="https://guacamayafly.github.io/public/assets/img/logo-6.svg" width="32"/>
+            <span class="font-extrabold text-lg select-none text-guacamayafly-orange">GuacamayaFly</span>
+        </div>
+        <nav class="hidden sm:flex space-x-6 text-sm font-normal text-black">
+            <a class="hover:underline" href="https://wa.me/5804243156057">Descubrir</a>
+            <a class="hover:underline" href="https://wa.me/5804243156057">Viajes</a>
+            <a class="hover:underline" href="https://wa.me/5804243156057">Opinión</a>
+            <a class="hover:underline" href="https://wa.me/5804243156057">Más</a>
+            <a class="hover:underline" href="pagos2.html">Pagos</a> 
+        </nav>
+        <div class="flex items-center space-x-4 text-sm">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-1 text-sm font-semibold" type="button">Iniciar sesión</button>
+        </div>
+    </header>
+
+    <main id="main-container" class="max-w-[1200px] mx-auto px-6">
+        <!-- Hero Section with Search Bar -->
+        <section class="text-center my-12">
+            <h1 id="search-title" class="font-extrabold text-2xl sm:text-3xl md:text-4xl mt-6 mb-6">Encuentra el mejor hospedaje</h1>
+            <nav id="search-nav" class="flex flex-wrap justify-center gap-4 text-xs sm:text-sm font-normal text-gray-700 mb-4">
+                 <button data-mode="all" class="search-nav-button flex items-center gap-1"> <i class="fas fa-home"></i> Buscar todo </button>
+                 <button data-mode="hotels" class="search-nav-button flex items-center gap-1 border border-black rounded px-2 py-1 font-semibold active"> <i class="fas fa-bed"></i> Hoteles </button>
+                 <button data-mode="flights" class="search-nav-button flex items-center gap-1"> <i class="fas fa-plane"></i> Vuelos </button>
+                 <button data-mode="tours" class="search-nav-button flex items-center gap-1"> <i class="fas fa-camera"></i> Cosas que hacer </button>
+                 <button data-mode="restaurants" class="search-nav-button flex items-center gap-1"> <i class="fas fa-utensils"></i> Restaurantes </button>
+                 <button data-mode="rentals" class="search-nav-button flex items-center gap-1"> <i class="fas fa-key"></i> Alquileres vacacionales </button>
+            </nav>
+            <form id="search-form" aria-label="Buscar hospedaje" class="search-form-container mb-12" role="search" novalidate>
+                <div id="destination-container" class="search-input-group">
+                    <i id="destination-icon" class="fas fa-map-marker-alt"></i>
+                    <input id="destination-input" placeholder="¿A dónde quieres ir?" type="text" required autocomplete="off"/>
+                    <div id="destination-suggestions" class="autocomplete-suggestions hidden"></div>
+                </div>
+                <div id="date-picker-trigger" class="search-input-group cursor-pointer">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="date-range-display" class="text-gray-500">Fechas</span>
+                </div>
+                <div id="travelers-picker-trigger" class="search-input-group cursor-pointer">
+                    <i class="fas fa-user"></i>
+                    <span id="travelers-display">1 viajero</span>
+                    <div id="travelers-modal" class="popover-modal hidden">
+                        <div class="popover-row">
+                            <div>
+                                <p class="font-semibold">Adultos</p>
+                                <p class="text-xs text-gray-500">18 años o más</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
+                                <span id="adults-count" class="font-semibold text-lg">1</span>
+                                <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
+                            </div>
+                        </div>
+                        <div class="popover-row">
+                             <div>
+                                <p class="font-semibold">Niños</p>
+                                <p class="text-xs text-gray-500">0 a 17 años</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
+                                <span id="children-count" class="font-semibold text-lg">0</span>
+                                <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
+                            </div>
+                        </div>
+                        <button type="button" id="close-travelers-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold mt-2">Aceptar</button>
+                    </div>
+                </div>
+                 <div id="baggage-picker-trigger" class="search-input-group cursor-pointer hidden">
+                    <i class="fas fa-suitcase-rolling"></i>
+                    <span id="baggage-display">Equipaje</span>
+                    <div id="baggage-modal" class="popover-modal hidden">
+                        <div class="popover-row">
+                            <div>
+                                <p class="font-semibold">Equipaje de mano (10kg)</p>
+                                <p class="text-xs text-gray-500">Costo: 45.00 € por pieza</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button type="button" class="counter-btn" data-type="baggage-10kg" data-action="decrement">-</button>
+                                <span id="baggage-10kg-count" class="font-semibold text-lg">0</span>
+                                <button type="button" class="counter-btn" data-type="baggage-10kg" data-action="increment">+</button>
+                            </div>
+                        </div>
+                        <div class="popover-row">
+                             <div>
+                                <p class="font-semibold">Equipaje facturado (23kg)</p>
+                                <p class="text-xs text-gray-500">Costo: 85.00 € por pieza</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <button type="button" class="counter-btn" data-type="baggage-23kg" data-action="decrement">-</button>
+                                <span id="baggage-23kg-count" class="font-semibold text-lg">0</span>
+                                <button type="button" class="counter-btn" data-type="baggage-23kg" data-action="increment">+</button>
+                            </div>
+                        </div>
+                        <button type="button" id="close-baggage-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold mt-2">Aceptar</button>
+                    </div>
+                </div>
+                <input type="hidden" id="destination-iata">
+                <input type="hidden" id="departure-date">
+                <input type="hidden" id="return-date">
+                <button class="search-main-button" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </section>
+
+        <!-- Main Content Area - Search Results and Filters -->
+        <div id="results-container-wrapper">
+            <!-- Filter Panel (Slide-in on Mobile, Static Sidebar on Desktop) -->
+            <div id="filter-panel">
+                <div class="p-4 border-b flex items-center justify-between lg:hidden">
+                    <h3 class="text-lg font-semibold text-gray-800">Filtros</h3>
+                    <button id="close-filters-btn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 space-y-6 flex-grow overflow-y-auto">
+                    <!-- Price Filter -->
+                    <div class="pb-4 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-700 mb-3">Precio</h3>
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span id="min-price-display">€0</span>
+                            <span id="max-price-display">€1000+</span>
+                        </div>
+                        <input type="range" id="price-range" min="0" max="1000" value="1000" class="w-full">
+                    </div>
+
+                    <!-- Star Rating Filter -->
+                    <div class="pb-4 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-700 mb-3">Estrellas</h3>
+                        <div id="star-filters" class="space-y-2">
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="5" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 flex items-center font-medium">5 <i class="fas fa-star text-yellow-400 ml-1"></i></span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="4" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 flex items-center font-medium">4 <i class="fas fa-star text-yellow-400 ml-1"></i></span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="3" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 flex items-center font-medium">3 <i class="fas fa-star text-yellow-400 ml-1"></i></span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="2" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 flex items-center font-medium">2 <i class="fas fa-star text-yellow-400 ml-1"></i></span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="1" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 flex items-center font-medium">1 <i class="fas fa-star text-yellow-400 ml-1"></i></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Alojamiento Filter -->
+                    <div class="pb-4 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-700 mb-3">Tipo de Alojamiento</h3>
+                        <div id="accommodation-type-filters" class="space-y-2">
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Hotel" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Hotel</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Apartamento" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Apartamento</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Hostal" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Hostal</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="BSB" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">B&B</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Alojamientos especiales" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Alojamientos especiales</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Albergues" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Albergues</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Amenities Filter -->
+                    <div class="pb-4 border-b border-gray-200">
+                        <h3 class="font-semibold text-gray-700 mb-3">Servicios</h3>
+                        <div id="amenities-filters" class="space-y-2">
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Wifi gratuito" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Wifi gratuito</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Piscina" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Piscina</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Aparcamiento gratuito" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Aparcamiento gratuito</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer text-gray-700 hover:text-gray-900 transition">
+                                <input type="checkbox" value="Desayuno incluido" class="form-checkbox h-5 w-5 text-guacamayafly-green rounded focus:ring-guacamayafly-green">
+                                <span class="ml-2 font-medium">Desayuno incluido</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Apply Filters Button (for mobile, inside the panel) -->
+                <div class="p-4 border-t lg:hidden">
+                    <button id="apply-filters-btn" class="w-full bg-guacamayafly-orange text-white py-2.5 rounded-lg hover:bg-guacamayafly-dark-orange font-semibold shadow-md transition duration-200">
+                        Aplicar Filtros
+                    </button>
+                    <button id="reset-filters-panel-btn" class="w-full bg-gray-200 text-gray-700 py-2.5 rounded-lg hover:bg-gray-300 font-semibold mt-2 transition duration-200">
+                        Restablecer Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Overlay -->
+            <div id="filter-overlay" class="hidden"></div>
+
+            <!-- Search Results List -->
+            <section class="flex-1">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Resultados de Búsqueda</h2>
+                <div id="search-results-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <!-- Hotel cards will be injected here -->
+                </div>
+                
+                <!-- Pagination (Placeholder) -->
+                <div class="flex justify-center mt-8 space-x-2">
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">&laquo; Anterior</button>
+                    <button class="px-4 py-2 border border-guacamayafly-green rounded-lg bg-guacamayafly-green text-white shadow-sm">1</button>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">2</button>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">3</button>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-200">Siguiente &raquo;</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Floating Filter Button for Mobile -->
+    <button id="open-filters-btn" class="md:hidden">
+        <i class="fas fa-filter text-lg"></i>
+        <span class="ml-2">Filtros</span>
+    </button>
+
+    <!-- Footer (from nuevoindex.html) -->
+    <footer class="bg-gray-100 mt-12 py-10 text-xs text-blue-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-4 gap-y-6 gap-x-8">
+                <div>
+                    <div class="mb-3 font-semibold">Empresa</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Quiénes somos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Empleo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Anuncia tu alojamiento</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Publicidad</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Prensa</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Búsquedas</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Viajes a España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Hoteles en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Alquileres vacacionales España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Paquetes de vacaciones baratos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Vuelos baratos en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Alquiler de coches en España</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Todos los alojamientos</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Guacamayafly Explore</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Políticas</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Términos y condiciones generales (excepto para reservas de Vrbo)</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Términos y condiciones de Vrbo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Privacidad</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cookies</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Condiciones de uso</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Información legal/contacto</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Pautas sobre el contenido y cómo denunciar contenido</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-3 font-semibold">Ayuda</div>
+                    <ul class="space-y-1">
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Ayuda</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cancelar un vuelo</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Cancelar una reserva de hotel o de un alquiler vacacional</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Plazos de reembolso</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Utilizar un cupón de Guacamayafly</a></li>
+                        <li><a class="hover:underline" href="https://wa.me/5804243156057">Documentos para viajes internacionales</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 text-center text-[9px] text-gray-600">
+                El sitio web de Guacamayafly.es permite pagar con American Express, Diner's Club International, MasterCard, Visa, Visa Electron, CartSsi, Carte Bleue y PayPal.
+            </div>
+        </div>
+    </footer>
+    
+    <button aria-label="Ayuda" class="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-full px-3 py-1 text-xs text-gray-700 shadow-md hover:bg-gray-50 flex items-center space-x-1" onclick="window.location.href='https://wa.me/5804243156057'">
+        <span>Ayuda</span>
+        <i class="fas fa-question-circle"></i>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Lógica del Pop-up de Desarrollo ---
+            const devPopupOverlay = document.getElementById('development-popup-overlay');
+            const devPopupCloseBtn = document.getElementById('development-popup-close');
+            let onPopupConfirmCallback = null;
+
+            function showDevelopmentPopup(callback) {
+                onPopupConfirmCallback = callback;
+                if (devPopupOverlay) {
+                    devPopupOverlay.classList.remove('hidden');
+                    setTimeout(() => devPopupOverlay.classList.add('visible'), 10);
+                }
+            }
+
+            if (devPopupCloseBtn) {
+                devPopupCloseBtn.addEventListener('click', () => {
+                    if (devPopupOverlay) {
+                        devPopupOverlay.classList.remove('visible');
+                        devPopupOverlay.addEventListener('transitionend', () => {
+                            devPopupOverlay.classList.add('hidden');
+                        }, { once: true });
+                    }
+                    if (typeof onPopupConfirmCallback === 'function') {
+                        onPopupConfirmCallback();
+                        onPopupConfirmCallback = null;
+                    }
+                });
+            }
+            
+            // --- Lógica para mostrar pop-up en la primera visita ---
+            if (!sessionStorage.getItem('initialPopupShown')) {
+                showDevelopmentPopup(() => {
+                    sessionStorage.setItem('initialPopupShown', 'true');
+                });
+            }
+
+            // --- DATA: Sample Hotels for Listing (Extended) ---
+            const hotelsData = [
+                { id: 1, name: 'Barceló Oviedo Cervantes', city: 'Oviedo', stars: 5, reviews: 174, mentions: ['Moderno', 'De moda', 'Negocios'], price: 220, image: 'https://storage.googleapis.com/a1aa/image/84d5bb53-c629-4ca7-e839-f4e1780e174b.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: true, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'parking', name: 'Aparcamiento gratuito'}, {icon: 'concierge-bell', name: 'Servicio de habitaciones'}, {icon: 'dumbbell', name: 'Gimnasio'}], style: ['modern', 'business'], chain: 'Barceló Hotels & Resorts', description: 'El Barceló Oviedo Cervantes es un hotel de diseño moderno ubicado en el centro de Oviedo, ideal para viajes de negocios y placer. Ofrece habitaciones elegantes y confortables, con todas las comodidades para una estancia inolvidable.' },
+                { id: 2, name: 'Aparthotel Campus', city: 'Oviedo', stars: 4, reviews: 91, mentions: ['Familiar', 'Céntrico', 'De gama media'], price: 122, image: 'https://storage.googleapis.com/a1aa/image/0d46ddba-eca5-4fc9-b960-5092ca5.jpg', reimbursable: false, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Apartamento', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'kitchen-set', name: 'Cocina equipada'}, {icon: 'tshirt', name: 'Servicio de lavandería'}], style: ['family-friendly', 'mid-range'], chain: null, description: 'El Aparthotel Campus ofrece apartamentos modernos y totalmente equipados, perfectos para familias o estancias prolongadas. Situado cerca de la universidad, combina la comodidad de un hogar con los servicios de un hotel.' },
+                { id: 3, name: 'Hotel Astures', city: 'Oviedo', stars: 3, reviews: 333, mentions: ['Vistas a la ciudad', 'Familiar', 'Económico'], price: 105, image: 'https://storage.googleapis.com/a1aa/image/3ed25819-b0da-44a9-1649-f67959528d8f.jpg', reimbursable: true, noPrepayment: true, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}], style: ['economic', 'family-friendly'], chain: null, description: 'El Hotel Astures es una opción económica y acogedora en el corazón de Oviedo. Sus habitaciones ofrecen vistas a la ciudad y es ideal para viajeros que buscan comodidad sin grandes lujos.' },
+                { id: 4, name: 'Las Caldas by Blau Hotels', city: 'Oviedo', stars: 4, reviews: 79, mentions: ['De gama media', 'Hoteles peculiares', 'Familiar'], price: 253, image: 'https://storage.googleapis.com/a1aa/image/19f51b8a-4119-4466-aa93-d40230d26d70.jpg', reimbursable: false, noPrepayment: false, specialOffers: true, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'swimming-pool', name: 'Piscina'}, {icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'spa', name: 'Spa y bienestar'}], style: ['mid-range', 'peculiar', 'family-friendly'], chain: null, description: 'Las Caldas by Blau Hotels es un complejo hotelero y balneario que ofrece una experiencia de relax y bienestar. Sus instalaciones incluyen piscinas termales y tratamientos de spa, en un entorno natural.' },
+                { id: 5, name: 'Eurostars Palacio De Cristal', city: 'Oviedo', stars: 4, reviews: 112, mentions: ['Tranquilo', 'Vistas al parque', 'Hoteles peculiares'], price: 141, image: 'https://storage.googleapis.com/a1aa/image/837e455d-8a76-4944-6da6-f4ea0510bac1.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'parking', name: 'Aparcamiento gratuito'}, {icon: 'coffee', name: 'Cafetería'}], style: ['tranquil', 'peculiar'], chain: 'Eurostars', description: 'El Eurostars Palacio de Cristal destaca por su impresionante arquitectura y su ubicación frente al Palacio de Congresos. Es un hotel tranquilo con vistas al parque, ideal para eventos y estancias relajantes.' },
+                { id: 6, name: 'Silken Monumental Naranco', city: 'Oviedo', stars: 4, reviews: 118, mentions: ['Familiar', 'De gama media', 'Vistas a la ciudad'], price: 118, image: 'https://storage.googleapis.com/a1aa/image/ef30aef6-53cf-464f-894e-de868d7f745b.jpg', reimbursable: true, noPrepayment: true, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'parking', name: 'Aparcamiento gratuito'}, {icon: 'restaurant', name: 'Restaurante'}], style: ['family-friendly', 'mid-range'], chain: null, description: 'El Silken Monumental Naranco ofrece un ambiente familiar y cómodo con excelentes vistas a la ciudad. Es una opción de gama media con buenas conexiones para explorar Oviedo.' },
+                { id: 7, name: 'NH Oviedo Principado', city: 'Oviedo', stars: 4, reviews: 266, mentions: ['De gama media', 'Ecológico', 'Céntrico'], price: 157, image: 'https://storage.googleapis.com/a1aa/image/a28bcdb3-47e3-46f0-9b1d-9b969bdcb794.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}, {icon: 'leaf', name: 'Iniciativas ecológicas'}], style: ['mid-range', 'eco', 'central'], chain: null, description: 'El NH Oviedo Principado es un hotel céntrico y ecológico, perfecto para explorar la ciudad a pie. Ofrece un desayuno variado y servicios de calidad para una estancia confortable.' },
+                { id: 8, name: 'Princesa Munia Hotel & Spa', city: 'Oviedo', stars: 3, reviews: 279, mentions: ['Moderno', 'De moda', 'Céntrico'], price: 152, image: 'https://storage.googleapis.com/a1aa/image/e0d95fe0-8d60-4dfa-2031-f32f77416777.jpg', reimbursable: true, noPrepayment: false, specialOffers: true, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'spa', name: 'Spa'}, {icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'cocktail', name: 'Bar'}], style: ['modern', 'trendy', 'central'], chain: null, description: 'El Princesa Munia Hotel & Spa es un hotel moderno y de moda en el corazón de Oviedo. Destaca por su spa urbano y su diseño contemporáneo, ideal para una escapada de relax.' },
+                { id: 9, name: 'AC Hotel Oviedo Forum', city: 'Oviedo', stars: 4, reviews: 95, mentions: ['Moderno', 'Negocios', 'Céntrico'], price: 136, image: 'https://storage.googleapis.com/a1aa/image/e5ba0e84-0d48-41e7-a9ba-5cc2c42d5ddb.jpg', reimbursable: true, noPrepayment: false, specialOffers: true, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'briefcase', name: 'Centro de negocios'}, {icon: 'restaurant', name: 'Restaurante'}], style: ['modern', 'business', 'central'], chain: null, description: 'El AC Hotel Oviedo Forum es una opción ideal para viajeros de negocios, con instalaciones modernas y un centro de negocios. Su ubicación céntrica facilita el acceso a puntos clave de la ciudad.' },
+                { id: 10, name: 'Hotel Exe Oviedo Centro', city: 'Oviedo', stars: 3, reviews: 72, mentions: ['Familiar', 'Tranquilo', 'De gama media'], price: 131, image: 'https://storage.googleapis.com/a1aa/image/97ba1009-9f5e-43d0-9d95-fae055b67813.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'parking', name: 'Aparcamiento gratuito'}], style: ['family-friendly', 'tranquil', 'mid-range'], chain: null, description: 'El Hotel Exe Oviedo Centro ofrece un ambiente tranquilo y familiar, con habitaciones cómodas y servicios prácticos. Es una buena base para explorar Oviedo en un viaje de ocio.' },
+                { id: 11, name: 'Eurostars Hotel De La Reconquista', city: 'Oviedo', stars: 4, reviews: 312, mentions: ['Hotel histórico', 'Tranquilo', 'Romántico'], price: 175, image: 'https://storage.googleapis.com/a1aa/image/48f421e0-966f-4e34-e6c8-862930aecbe0.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: true, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'restaurant', name: 'Restaurante gourmet'}, {icon: 'parking', name: 'Aparcamiento gratuito'}], style: ['historic', 'tranquil', 'romantic'], chain: 'Eurostars', description: 'El Eurostars Hotel De La Reconquista es un emblemático hotel histórico de Oviedo, conocido por su elegancia y encanto. Ideal para estancias románticas y eventos especiales.' },
+                { id: 12, name: 'Sercotel Ciudad De Oviedo', city: 'Oviedo', stars: 3, reviews: 252, mentions: ['Familiar', 'De gama media', 'Céntrico'], price: 115, image: 'https://storage.googleapis.com/a1aa/image/a56da796-2e31-4fed-139c-3ee46d08191f.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}], style: ['family-friendly', 'mid-range', 'central'], chain: null, description: 'El Sercotel Ciudad de Oviedo es un hotel céntrico y funcional, perfecto para explorar la ciudad. Ofrece un ambiente familiar y todas las comodidades para una estancia agradable.' },
+                { id: 13, name: 'Hotel Favila', city: 'Oviedo', stars: 3, reviews: 94, mentions: ['Económico', 'Céntrico', 'Familiar'], price: 235, image: 'https://storage.googleapis.com/a1aa/image/5d88924a-d009-4049-873f-662e92b61e16.jpg', reimbursable: true, noPrepayment: true, specialOffers: true, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}], style: ['economic', 'central', 'family-friendly'], chain: null, description: 'El Hotel Favila es una opción económica y bien ubicada en Oviedo, ideal para familias. Ofrece un buen punto de partida para visitar los principales atractivos de la ciudad.' },
+                { id: 14, name: 'Altamirano 13', city: 'Oviedo', stars: 3, reviews: 13, mentions: [], price: 147, image: 'https://storage.googleapis.com/a1aa/image/c308c1cd-8db5-40db-6d5d-6521c6b085eb.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'Apartamento', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}], style: ['modern'], chain: null, description: 'Altamirano 13 ofrece apartamentos modernos y con estilo en el centro de Oviedo. Es una opción ideal para aquellos que buscan independencia y comodidad durante su estancia.' },
+                { id: 15, name: 'B&B Oviedo Opera', city: 'Oviedo', stars: 3, reviews: 10, mentions: ['Pintoresco', 'De gama media'], price: 99, image: 'https://storage.googleapis.com/a1aa/image/ab747350-73c3-492d-c1a1-1fb024184ebf.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: false, type: 'BSB', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}], style: ['picturesque', 'mid-range'], chain: null, description: 'El B&B Oviedo Opera es un alojamiento pintoresco y acogedor, perfecto para una estancia tranquila. Ofrece un ambiente hogareño y un desayuno casero.' },
+                { id: 16, name: 'Hostel Oviedo Centro', city: 'Oviedo', stars: 2, reviews: 50, mentions: ['Económico', 'Céntrico'], price: 45, image: 'https://placehold.co/400x250/00c897/FFFFFF?text=Hostel+Oviedo', reimbursable: true, noPrepayment: true, specialOffers: false, travellersChoice: false, type: 'Albergues', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'bed', name: 'Habitaciones compartidas'}], style: ['economic', 'central'], chain: null, description: 'El Hostel Oviedo Centro es una opción económica y céntrica para viajeros con presupuesto limitado. Ofrece camas en dormitorios compartidos y un ambiente social.' },
+                { id: 17, name: 'Casa Rural La Montaña', city: 'Pola de Lena', stars: 4, reviews: 30, mentions: ['Rural', 'Tranquilo'], price: 180, image: 'https://placehold.co/400x250/FF7F00/FFFFFF?text=Casa+Rural', reimbursable: true, noPrepayment: false, specialOffers: true, travellersChoice: false, type: 'Alojamientos especiales', amenities: [{icon: 'parking', name: 'Aparcamiento gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}, {icon: 'tree', name: 'Jardín'}], style: ['tranquil', 'rural'], chain: null, description: 'Casa Rural La Montaña es un refugio tranquilo en el campo asturiano, ideal para desconectar. Ofrece un ambiente rústico y acceso a rutas de senderismo.' },
+                { id: 18, name: 'Hotel Balneario de Las Caldas', city: 'Las Caldas', stars: 5, reviews: 200, mentions: ['Lujo', 'Spa', 'Relax'], price: 350, image: 'https://placehold.co/400x250/00b386/FFFFFF?text=Balneario', reimbursable: true, noPrepayment: false, specialOffers: true, travellersChoice: true, type: 'Hotel', amenities: [{icon: 'spa', name: 'Spa de lujo'}, {icon: 'swimming-pool', name: 'Piscina cubierta'}, {icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'mug-hot', name: 'Desayuno incluido'}], style: ['luxury', 'wellness'], chain: null, description: 'El Hotel Balneario de Las Caldas es un destino de lujo para el relax y el bienestar. Sus extensas instalaciones de spa y su entorno natural garantizan una experiencia rejuvenecedora.' },
+                { id: 19, name: 'Hotel de la Reconquista', city: 'Oviedo', stars: 5, reviews: 500, mentions: ['Histórico', 'Lujo', 'Céntrico'], price: 280, image: 'https://storage.googleapis.com/a1aa/image/48f421e0-966f-4e34-e6c8-862930aecbe0.jpg', reimbursable: true, noPrepayment: false, specialOffers: false, travellersChoice: true, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}, {icon: 'restaurant', name: 'Restaurante'}, {icon: 'parking', name: 'Aparcamiento gratuito'}, {icon: 'bell', name: 'Conserjería'}], style: ['historic', 'luxury', 'central'], chain: null, description: 'El Hotel de la Reconquista es un icono de Oviedo, un hotel histórico con un lujo clásico. Su ubicación céntrica lo hace perfecto para explorar la ciudad con estilo.' },
+                { id: 20, name: 'Hotel Vetusta', city: 'Oviedo', stars: 3, reviews: 120, mentions: ['Céntrico', 'Económico'], price: 90, image: 'https://placehold.co/400x250/FF7F00/FFFFFF?text=Hotel+Vetusta', reimbursable: true, noPrepayment: true, specialOffers: false, travellersChoice: false, type: 'Hotel', amenities: [{icon: 'wifi', name: 'Wifi gratuito'}], style: ['economic', 'central'], chain: null, description: 'El Hotel Vetusta es una opción económica y bien ubicada en el centro de Oviedo, ideal para viajeros que buscan una base sencilla y cómoda para explorar la ciudad.' }
+            ];
+
+            // --- BASE DE DATOS LOCAL DE AEROPUERTOS (para autocompletado de destino) ---
+            const airportsDb = [
+                // Venezuela
+                { name: 'Aeropuerto Internacional de Maiquetía Simón Bolívar', city: 'Caracas', country: 'Venezuela', iata: 'CCS', searchTerms: 'caracas venezuela ccs maiquetia' },
+                { name: 'Aeropuerto Internacional La Chinita', city: 'Maracaibo', country: 'Venezuela', iata: 'MAR', searchTerms: 'maracaibo venezuela mar la chinita' },
+                { name: 'Aeropuerto Internacional Arturo Michelena', city: 'Valencia', country: 'Venezuela', iata: 'VLN', searchTerms: 'valencia venezuela vln arturo michelena' },
+                { name: 'Aeropuerto Internacional General José Antonio Anzoátegui', city: 'Barcelona', country: 'Venezuela', iata: 'BLA', searchTerms: 'barcelona venezuela bla jose antonio anzoategui' },
+                { name: 'Aeropuerto Internacional Del Caribe Santiago Mariño', city: 'Porlamar', country: 'Venezuela', iata: 'PMV', searchTerms: 'porlamar venezuela pmv santiago marino margarita' },
+                // Colombia
+                { name: 'Aeropuerto Internacional El Dorado', city: 'Bogotá', country: 'Colombia', iata: 'BOG', searchTerms: 'bogota colombia bog el dorado' },
+                { name: 'Aeropuerto Internacional José María Córdova', city: 'Medellín', country: 'Colombia', iata: 'MDE', searchTerms: 'medellin colombia mde jose maria cordova' },
+                // Chile
+                { name: 'Aeropuerto Internacional Arturo Merino Benítez', city: 'Santiago de Chile', country: 'Chile', iata: 'SCL', searchTerms: 'santiago de chile chile scl arturo merino benitez' },
+                // Argentina
+                { name: 'Aeropuerto Internacional Ministro Pistarini', city: 'Buenos Aires', country: 'Argentina', iata: 'EZE', searchTerms: 'buenos aires argentina eze ministro pistarini ezeiza' },
+                // España
+                { name: 'Aeropuerto Adolfo Suárez Madrid-Barajas', city: 'Madrid', country: 'España', iata: 'MAD', searchTerms: 'madrid españa mad adolfo suarez barajas' },
+                { name: 'Aeropuerto de Barcelona-El Prat', city: 'Barcelona', country: 'España', iata: 'BCN', searchTerms: 'barcelona españa bcn el prat' },
+                { name: 'Aeropuerto de Oviedo-Asturias', city: 'Oviedo', country: 'España', iata: 'OVD', searchTerms: 'oviedo españa ovd asturias' },
+                // Otros
+                { name: 'Aeropuerto Internacional de Estambul', city: 'Estambul', country: 'Turquía', iata: 'IST', searchTerms: 'estambul turquia turkey ist' },
+            ];
+
+            // --- STATE VARIABLES ---
+            let travelers = { adults: 1, children: 0 };
+            let baggage = { '10kg': 0, '23kg': 0 };
+            let currentMonthDate = new Date();
+            let selectedDeparture = null;
+            let selectedReturn = null;
+            let currentSearchMode = 'hotels'; // Default mode for finder2.html
+
+            // --- DOM ELEMENTS ---
+            const searchForm = document.getElementById('search-form');
+            const destinationInput = document.getElementById('destination-input');
+            const destinationIataInput = document.getElementById('destination-iata');
+            const destinationSuggestions = document.getElementById('destination-suggestions');
+            const datePickerTrigger = document.getElementById('date-picker-trigger');
+            const dateRangeDisplay = document.getElementById('date-range-display');
+            const departureDateInput = document.getElementById('departure-date');
+            const returnDateInput = document.getElementById('return-date');
+            const travelersPickerTrigger = document.getElementById('travelers-picker-trigger');
+            const travelersModal = document.getElementById('travelers-modal'); // This is now the popover
+            const closeTravelersBtn = document.getElementById('close-travelers-btn');
+            const adultsCountSpan = document.getElementById('adults-count');
+            const childrenCountSpan = document.getElementById('children-count');
+            const travelersDisplay = document.getElementById('travelers-display');
+            const baggagePickerTrigger = document.getElementById('baggage-picker-trigger');
+            const baggageModal = document.getElementById('baggage-modal'); // This is now the popover
+            const closeBaggageBtn = document.getElementById('close-baggage-btn');
+            const baggage10kgCountSpan = document.getElementById('baggage-10kg-count');
+            const baggage23kgCountSpan = document.getElementById('baggage-23kg-count');
+            const baggageDisplay = document.getElementById('baggage-display');
+
+            const searchResultsList = document.getElementById('search-results-list');
+            const priceRangeSlider = document.getElementById('price-range');
+            const minPriceDisplay = document.getElementById('min-price-display');
+            const maxPriceDisplay = document.getElementById('max-price-display');
+            const starFiltersContainer = document.getElementById('star-filters');
+            const accommodationTypeFiltersContainer = document.getElementById('accommodation-type-filters');
+            const amenitiesFiltersContainer = document.getElementById('amenities-filters');
+            const applyFiltersBtn = document.getElementById('apply-filters-btn'); // Specific selector for apply filters button
+            const resetFiltersPanelBtn = document.getElementById('reset-filters-panel-btn');
+
+            const calendarModal = document.getElementById('calendar-modal');
+            const calendarMonthsContainer = document.getElementById('calendar-months-container');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const closeCalendarBtn = document.getElementById('close-calendar-btn');
+            const clearDatesBtn = document.getElementById('clear-dates-btn');
+            const closeCalendarModalX = document.getElementById('close-calendar-modal-x');
+            const calendarCheckinDisplay = document.getElementById('calendar-checkin-display');
+            const calendarCheckoutDisplay = document.getElementById('calendar-checkout-display');
+            const calendarGuestsDisplay = document.getElementById('calendar-guests-display');
+            const calendarMonthYear = document.getElementById('calendar-month-year');
+            const tonightBtn = document.getElementById('tonight-btn');
+            const nextWeekendBtn = document.getElementById('next-weekend-btn');
+            
+            const searchTitle = document.getElementById('search-title');
+            const searchNavButtons = document.querySelectorAll('.search-nav-button');
+            const mainContainer = document.getElementById('main-container'); // Used for scrollIntoView
+
+            // Filter Panel Elements
+            const openFiltersBtn = document.getElementById('open-filters-btn');
+            const closeFiltersBtn = document.getElementById('close-filters-btn');
+            const filterPanel = document.getElementById('filter-panel');
+            const filterOverlay = document.getElementById('filter-overlay');
+            
+            // --- UTILITY FUNCTIONS ---
+
+            function showNotification(message, type = 'success') {
+                const container = document.getElementById('notification-container');
+                const popup = document.createElement('div');
+                popup.className = `notification-popup ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+                popup.textContent = message;
+                container.appendChild(popup);
+                requestAnimationFrame(() => popup.classList.add('show'));
+                setTimeout(() => {
+                    popup.classList.remove('show');
+                    popup.addEventListener('transitionend', () => popup.remove());
+                }, 3000);
+            }
+
+            function searchLocations(keyword, inputElement, suggestionsContainer) {
+                if (keyword.length < 2) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                const lowerKeyword = keyword.toLowerCase();
+                const results = airportsDb.filter(airport => 
+                    airport.searchTerms.toLowerCase().includes(lowerKeyword)
+                );
+                
+                displaySuggestions(results, inputElement, suggestionsContainer);
+            }
+
+            function displaySuggestions(suggestions, inputElement, suggestionsContainer) {
+                suggestionsContainer.innerHTML = '';
+                if (suggestions && suggestions.length > 0) {
+                    suggestions.forEach(suggestion => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <i class="fas fa-map-marker-alt text-gray-400"></i>
+                            <div>
+                                <p>${suggestion.city} ${suggestion.iata ? `<span class="iata-code">${suggestion.iata}</span>` : ''}</p>
+                                <p class="text-xs text-gray-500">${suggestion.country}</p>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => {
+                            inputElement.value = `${suggestion.city}`; // Display city name
+                            destinationIataInput.value = suggestion.iata; // Store IATA for filtering
+                            suggestionsContainer.innerHTML = '';
+                            suggestionsContainer.classList.add('hidden');
+                        });
+                        suggestionsContainer.appendChild(item);
+                    });
+                    suggestionsContainer.classList.remove('hidden');
+                } else {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            }
+
+            // Updates the display text for travelers input
+            function updateTravelersDisplay() {
+                const total = travelers.adults + travelers.children;
+                let text = `${total} viajero`;
+                if (total > 1) text += 's';
+                
+                let details = `${travelers.adults} adulto${travelers.adults > 1 ? 's' : ''}`;
+                if (travelers.children > 0) {
+                    details += `, ${travelers.children} niño${travelers.children > 1 ? 's' : ''}`;
+                }
+                travelersDisplay.textContent = details;
+                calendarGuestsDisplay.innerHTML = `<i class="fas fa-user-friends mr-1"></i> ${travelers.adults + travelers.children}`;
+            }
+            
+            // Updates the display text for baggage input (hidden for hotels, but kept for consistency)
+            function updateBaggageDisplay() {
+                let text = 'Equipaje';
+                const parts = [];
+                if (baggage['10kg'] > 0) parts.push(`${baggage['10kg']}x10kg`);
+                if (baggage['23kg'] > 0) parts.push(`${baggage['23kg']}x23kg`);
+
+                if (parts.length > 0) {
+                    text = parts.join(', ');
+                }
+                baggageDisplay.textContent = text;
+            }
+
+            function handleCounterClick(e) {
+                const button = e.target.closest('.counter-btn');
+                if (!button) return;
+
+                const type = button.dataset.type;
+                const action = button.dataset.action;
+
+                switch(type) {
+                    case 'adults':
+                        if (action === 'increment') travelers.adults++;
+                        else if (action === 'decrement' && travelers.adults > 1) travelers.adults--;
+                        adultsCountSpan.textContent = travelers.adults;
+                        document.querySelector('[data-type="adults"][data-action="decrement"]').disabled = travelers.adults <= 1;
+                        updateTravelersDisplay();
+                        break;
+                    case 'children':
+                        if (action === 'increment') travelers.children++;
+                        else if (action === 'decrement' && travelers.children > 0) travelers.children--;
+                        childrenCountSpan.textContent = travelers.children;
+                        document.querySelector('[data-type="children"][data-action="decrement"]').disabled = travelers.children <= 0;
+                        updateTravelersDisplay();
+                        break;
+                    case 'baggage-10kg': // These are for flights, but included for completeness if mode changes
+                        if (action === 'increment') baggage['10kg']++;
+                        else if (action === 'decrement' && baggage['10kg'] > 0) baggage['10kg']--;
+                        baggage10kgCountSpan.textContent = baggage['10kg'];
+                        document.querySelector('[data-type="baggage-10kg"][data-action="decrement"]').disabled = baggage['10kg'] <= 0;
+                        updateBaggageDisplay();
+                        break;
+                    case 'baggage-23kg': // These are for flights, but included for completeness if mode changes
+                        if (action === 'increment') baggage['23kg']++;
+                        else if (action === 'decrement' && baggage['23kg'] > 0) baggage['23kg']--;
+                        baggage23kgCountSpan.textContent = baggage['23kg'];
+                        document.querySelector('[data-type="baggage-23kg"][data-action="decrement"]').disabled = baggage['23kg'] <= 0;
+                        updateBaggageDisplay();
+                        break;
+                }
+            }
+
+            function renderCalendar() {
+                calendarMonthsContainer.innerHTML = '';
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                calendarMonthYear.textContent = currentMonthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                
+                const monthsToShow = window.innerWidth < 768 ? 1 : 2;
+
+                for (let i = 0; i < monthsToShow; i++) {
+                    const monthDate = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + i, 1);
+                    if (monthsToShow > 1) { // Only update main month/year display if showing single month
+                         calendarMonthYear.textContent = monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                    }
+                    const monthEl = document.createElement('div');
+                    if (monthsToShow > 1) { // Add month title for multi-month view
+                        monthEl.innerHTML = `<h4 class="font-semibold text-center mb-2">${monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h4>`;
+                    }
+                    const gridEl = document.createElement('div');
+                    gridEl.className = 'calendar-grid';
+                    ['D', 'L', 'M', 'X', 'J', 'V', 'S'].forEach(day => gridEl.innerHTML += `<div class="calendar-day weekday">${day}</div>`);
+                    
+                    let firstDayOfMonth = monthDate.getDay();
+                    for (let j = 0; j < firstDayOfMonth; j++) gridEl.appendChild(document.createElement('div'));
+
+                    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dayEl = document.createElement('div');
+                        const dayDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+                        dayEl.className = 'calendar-day';
+                        dayEl.textContent = day;
+                        dayEl.dataset.date = dayDate.toISOString().split('T')[0];
+                        
+                        const rand = Math.random(); // Simulate price variations
+                        if (rand < 0.3) dayEl.classList.add('price-cheap'); else if (rand < 0.7) dayEl.classList.add('price-medium'); else dayEl.classList.add('price-expensive');
+                        
+                        if (dayDate < today) {
+                            dayEl.classList.add('disabled');
+                        } else {
+                            dayEl.addEventListener('click', () => handleDateClick(dayDate));
+                        }
+                        gridEl.appendChild(dayEl);
+                    }
+                    monthEl.appendChild(gridEl);
+                    calendarMonthsContainer.appendChild(monthEl);
+                }
+                updateCalendarSelection();
+            }
+
+            function handleDateClick(date) {
+                if (!selectedDeparture || (selectedDeparture && selectedReturn)) {
+                    selectedDeparture = date; 
+                    selectedReturn = null;
+                } else if (date < selectedDeparture) {
+                    selectedDeparture = date;
+                } else {
+                    selectedReturn = date;
+                }
+                updateCalendarSelection();
+            }
+
+            function updateCalendarSelection() {
+                const formatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+                calendarCheckinDisplay.textContent = selectedDeparture ? selectedDeparture.toLocaleDateString('es-ES', formatOptions) : '--';
+                calendarCheckoutDisplay.textContent = selectedReturn ? selectedReturn.toLocaleDateString('es-ES', formatOptions) : '--';
+                
+                document.querySelectorAll('.calendar-day[data-date]').forEach(day => {
+                    day.classList.remove('selected', 'in-range', 'range-start', 'range-end');
+                    const dayDate = new Date(day.dataset.date + 'T00:00:00');
+                    if (selectedDeparture && day.dataset.date === selectedDeparture.toISOString().split('T')[0]) day.classList.add('selected', 'range-start');
+                    if (selectedReturn && day.dataset.date === selectedReturn.toISOString().split('T')[0]) day.classList.add('selected', 'range-end');
+                    if (selectedDeparture && selectedReturn && dayDate > selectedDeparture && dayDate < selectedReturn) day.classList.add('in-range');
+                });
+            }
+
+            function updateDateDisplay() {
+                if (selectedDeparture && selectedReturn) {
+                    const depStr = selectedDeparture.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    const retStr = selectedReturn.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    dateRangeDisplay.textContent = `${depStr} → ${retStr}`;
+                    dateRangeDisplay.classList.remove('text-gray-500');
+                    departureDateInput.value = selectedDeparture.toISOString().split('T')[0];
+                    returnDateInput.value = selectedReturn.toISOString().split('T')[0];
+                } else if (selectedDeparture) {
+                    dateRangeDisplay.textContent = `Ida: ${selectedDeparture.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
+                    dateRangeDisplay.classList.remove('text-gray-500');
+                    departureDateInput.value = selectedDeparture.toISOString().split('T')[0]; 
+                    returnDateInput.value = '';
+                } else {
+                    dateRangeDisplay.textContent = 'Fechas'; 
+                    dateRangeDisplay.classList.add('text-gray-500');
+                    departureDateInput.value = ''; 
+                    returnDateInput.value = '';
+                }
+            }
+
+            // Renders hotel cards based on filtered data (IMPROVED)
+            function renderHotelCards(hotelsToRender) {
+                searchResultsList.innerHTML = ''; // Clear existing results
+                if (hotelsToRender.length === 0) {
+                    searchResultsList.innerHTML = '<p class="col-span-full text-center text-gray-600 text-lg py-10">No se encontraron alojamientos que coincidan con tus filtros.</p>';
+                    return;
+                }
+
+                hotelsToRender.forEach(hotel => {
+                    const starIcons = '<i class="fas fa-star text-yellow-400"></i>'.repeat(hotel.stars);
+                    const mentionsHtml = hotel.mentions && hotel.mentions.length > 0 ? 
+                        `<p class="hotel-card-mentions">Menciones: ${hotel.mentions.join(' · ')}</p>` : '';
+
+                    const hotelCard = document.createElement('article');
+                    hotelCard.className = 'hotel-card-article';
+                    hotelCard.innerHTML = `
+                        <div class="hotel-card-image-container">
+                            <img src="${hotel.image}" alt="${hotel.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x250/e0e0e0/ffffff?text=Imagen+no+disponible';"/>
+                            <button aria-label="Añadir a favoritos" class="absolute top-2 right-2 text-white text-lg hover:text-red-500 transition">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            ${hotel.travellersChoice ? `<span class="absolute top-2 left-2 bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full font-semibold">Mejor valorado</span>` : ''}
+                            ${hotel.specialOffers ? `<span class="absolute bottom-2 left-2 bg-guacamayafly-orange text-white text-xs px-2 py-0.5 rounded-full font-semibold">Oferta especial</span>` : ''}
+                        </div>
+                        <div class="hotel-card-content">
+                            <div>
+                                <h3 class="hotel-card-title">${hotel.name}</h3>
+                                <div class="hotel-card-stars">
+                                    ${starIcons}
+                                    <span class="text-gray-500 text-xs ml-1">(${hotel.reviews} opiniones)</span>
+                                </div>
+                                ${mentionsHtml}
+                            </div>
+                            <div class="hotel-card-actions">
+                                <a class="hotel-card-link" href="#">Ver ofertas</a>
+                                <div class="text-right">
+                                    <div class="hotel-card-price">
+                                        ${hotel.price} €
+                                    </div>
+                                    <div class="hotel-card-price-details">
+                                        ${!hotel.reimbursable ? `<span class="text-red-600 font-normal">No reembolsable</span>` : ''}
+                                        ${hotel.noPrepayment ? `<span class="text-gray-500 font-normal">Sin pago por adelantado</span>` : ''}
+                                    </div>
+                                    <button class="hotel-card-button mt-2" type="button" onclick="window.location.href='productdetails.html?hotelId=${hotel.id}'">
+                                        Ver hotel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    searchResultsList.appendChild(hotelCard);
+                });
+            }
+
+            // Applies filters to the hotel data and re-renders the list
+            function applyFilters() {
+                const destinationKeyword = destinationInput.value.toLowerCase();
+                const maxPrice = parseInt(priceRangeSlider.value);
+
+                // Get selected star ratings
+                const selectedStars = Array.from(starFiltersContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                                       .map(checkbox => parseInt(checkbox.value));
+                
+                // Get selected accommodation types
+                const selectedAccommodationTypes = Array.from(accommodationTypeFiltersContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                                                    .map(checkbox => checkbox.value);
+
+                // Get selected amenities
+                const selectedAmenities = Array.from(amenitiesFiltersContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                                            .map(checkbox => checkbox.value);
+
+                const filteredHotels = hotelsData.filter(hotel => {
+                    const matchesDestination = !destinationKeyword || 
+                                               hotel.city.toLowerCase().includes(destinationKeyword) || 
+                                               hotel.name.toLowerCase().includes(destinationKeyword);
+                    
+                    const passesPriceFilter = hotel.price <= maxPrice;
+
+                    const passesStarFilter = selectedStars.length === 0 || selectedStars.includes(hotel.stars);
+
+                    const passesAccommodationTypeFilter = selectedAccommodationTypes.length === 0 || selectedAccommodationTypes.includes(hotel.type);
+
+                    const passesAmenitiesFilter = selectedAmenities.length === 0 || 
+                                                  selectedAmenities.every(selectedAmenity => 
+                                                      hotel.amenities && hotel.amenities.some(a => a.name === selectedAmenity)
+                                                  );
+
+                    return matchesDestination && passesPriceFilter && passesStarFilter && 
+                           passesAccommodationTypeFilter && passesAmenitiesFilter;
+                });
+                renderHotelCards(filteredHotels);
+
+                // Close filter panel on mobile after applying filters
+                if (window.innerWidth < 1024) {
+                    toggleFilterPanel(false);
+                }
+            }
+
+            function resetAllFilters() {
+                // Reset price range slider to max
+                priceRangeSlider.value = priceRangeSlider.max;
+                maxPriceDisplay.textContent = `€${priceRangeSlider.max}+`;
+
+                // Reset all checkboxes in filter panel
+                document.querySelectorAll('#filter-panel input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+
+                // Re-apply filters to show all hotels
+                applyFilters();
+            }
+
+            // --- FILTER PANEL LOGIC ---
+            function toggleFilterPanel(show) {
+                if (show) {
+                    filterPanel.classList.add('active');
+                    filterOverlay.classList.add('active');
+                    filterOverlay.classList.remove('hidden');
+                } else {
+                    filterPanel.classList.remove('active');
+                    filterOverlay.classList.remove('active');
+                    filterOverlay.addEventListener('transitionend', () => {
+                        filterOverlay.classList.add('hidden');
+                    }, { once: true });
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+
+            // Autocomplete for Destination Input
+            destinationInput.addEventListener('input', () => searchLocations(destinationInput.value, destinationInput, destinationSuggestions));
+            document.addEventListener('click', (e) => {
+                if (!destinationInput.parentElement.contains(e.target)) {
+                    destinationSuggestions.classList.add('hidden');
+                }
+            });
+
+            // Date Picker Trigger
+            if (datePickerTrigger) datePickerTrigger.addEventListener('click', () => { calendarModal.classList.remove('hidden'); calendarModal.classList.add('visible'); renderCalendar(); });
+            if (closeCalendarBtn) closeCalendarBtn.addEventListener('click', () => { calendarModal.classList.remove('visible'); calendarModal.classList.add('hidden'); updateDateDisplay(); });
+            if (closeCalendarModalX) closeCalendarModalX.addEventListener('click', () => { calendarModal.classList.remove('visible'); calendarModal.classList.add('hidden'); });
+            if (clearDatesBtn) clearDatesBtn.addEventListener('click', () => { selectedDeparture = null; selectedReturn = null; renderCalendar(); updateDateDisplay(); });
+            if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => { currentMonthDate.setMonth(currentMonthDate.getMonth() - 1); renderCalendar(); });
+            if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => { currentMonthDate.setMonth(currentMonthDate.getMonth() + 1); renderCalendar(); });
+            if (tonightBtn) tonightBtn.addEventListener('click', () => {
+                const today = new Date();
+                const tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1);
+                selectedDeparture = today;
+                selectedReturn = tomorrow;
+                updateDateDisplay();
+                calendarModal.classList.remove('visible');
+                calendarModal.classList.add('hidden');
+            });
+            if (nextWeekendBtn) nextWeekendBtn.addEventListener('click', () => {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+                const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+                const nextFriday = new Date(today);
+                nextFriday.setDate(today.getDate() + daysUntilFriday);
+                const nextSunday = new Date(nextFriday);
+                nextSunday.setDate(nextFriday.getDate() + 2);
+                selectedDeparture = nextFriday;
+                selectedReturn = nextSunday;
+                updateDateDisplay();
+                calendarModal.classList.remove('visible');
+                calendarModal.classList.add('hidden');
+            });
+
+            // Travelers Popover Logic
+            if (travelersPickerTrigger) {
+                travelersPickerTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (travelersModal) {
+                        travelersModal.classList.toggle('hidden');
+                        travelersModal.classList.toggle('visible');
+                    }
+                });
+            }
+            if (closeTravelersBtn) closeTravelersBtn.addEventListener('click', () => {travelersModal.classList.add('hidden'); travelersModal.classList.remove('visible');});
+            if (travelersModal) travelersModal.addEventListener('click', handleCounterClick);
+
+            // Baggage Popover Logic (hidden for hotels, but logic kept)
+            if (baggagePickerTrigger) {
+                baggagePickerTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (baggageModal) {
+                        baggageModal.classList.toggle('hidden');
+                        baggageModal.classList.toggle('visible');
+                    }
+                });
+            }
+            if (closeBaggageBtn) closeBaggageBtn.addEventListener('click', () => {baggageModal.classList.add('hidden'); baggageModal.classList.remove('visible');});
+            if (baggageModal) baggageModal.addEventListener('click', handleCounterClick);
+            
+            // Close popovers if click outside
+            document.addEventListener('click', function(event) {
+                if (travelersPickerTrigger && !travelersPickerTrigger.contains(event.target) && travelersModal && !travelersModal.contains(event.target)) {
+                    travelersModal.classList.add('hidden');
+                    travelersModal.classList.remove('visible');
+                }
+                if (baggagePickerTrigger && !baggagePickerTrigger.contains(event.target) && baggageModal && !baggageModal.contains(event.target)) {
+                    baggageModal.classList.add('hidden');
+                    baggageModal.classList.remove('visible');
+                }
+            });
+
+            // Search Form Submission
+            if(searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (currentSearchMode === 'hotels') {
+                        const destination = destinationInput.value;
+                        const checkIn = departureDateInput.value;
+
+                        if (!destination || !checkIn) {
+                            showNotification('Por favor, ingresa un destino y una fecha de entrada.', 'error');
+                            return;
+                        }
+                        // Apply filters with the current search criteria
+                        applyFilters();
+                        // Scroll to results section
+                        mainContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        showNotification('Esta función de búsqueda aún no está disponible.', 'error');
+                    }
+                });
+            }
+
+            // Search Navigation Tabs (Hoteles, Vuelos, etc.)
+            searchNavButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const newMode = e.currentTarget.dataset.mode;
+                    if (newMode === currentSearchMode) return;
+
+                    searchNavButtons.forEach(btn => btn.classList.remove('active', 'border', 'border-black', 'rounded', 'px-2', 'py-1', 'font-semibold'));
+                    e.currentTarget.classList.add('active', 'border', 'border-black', 'rounded', 'px-2', 'py-1', 'font-semibold');
+                    currentSearchMode = newMode;
+
+                    // Adjust UI based on mode
+                    const destinationContainer = document.getElementById('destination-container');
+                    const destinationIcon = document.getElementById('destination-icon');
+                    const baggagePicker = document.getElementById('baggage-picker-trigger');
+                    const searchFormContainer = document.getElementById('search-form');
+
+                    // Hide filter panel on mobile if switching from hotels
+                    if (window.innerWidth < 1024 && newMode !== 'hotels') {
+                        toggleFilterPanel(false);
+                    }
+
+                    if (newMode === 'hotels') {
+                        searchTitle.textContent = 'Encuentra el mejor hospedaje';
+                        destinationInput.placeholder = '¿A dónde quieres ir?';
+                        destinationIcon.className = 'fas fa-map-marker-alt';
+                        destinationContainer.classList.remove('hidden'); // Ensure destination is visible for hotels
+                        baggagePicker.classList.add('hidden'); // Hide baggage for hotels
+                        searchFormContainer.classList.remove('flights-active'); // Remove flight-specific background
+                        // Show filter panel on desktop, or keep hidden on mobile until opened
+                        if (window.innerWidth >= 1024) {
+                            filterPanel.classList.remove('hidden');
+                        }
+                        applyFilters(); // Re-apply filters for hotels
+                    } else if (newMode === 'flights') {
+                        searchTitle.textContent = 'Encuentra el mejor vuelo';
+                        destinationInput.placeholder = 'Destino';
+                        destinationIcon.className = 'fas fa-plane-arrival'; // Change icon for flights
+                        destinationContainer.classList.remove('hidden');
+                        baggagePicker.classList.remove('hidden'); // Show baggage for flights
+                        searchFormContainer.classList.add('flights-active');
+                        filterPanel.classList.add('hidden'); // Hide filters for flights
+                        searchResultsList.innerHTML = '<p class="col-span-full text-center text-gray-600 text-lg py-10">La búsqueda de vuelos no está implementada en esta versión.</p>';
+                    } else { // For 'all', 'tours', 'restaurants', 'rentals'
+                        searchTitle.textContent = 'Encuentra el mejor...';
+                        destinationInput.placeholder = 'Buscar por lugar';
+                        destinationIcon.className = 'fas fa-search';
+                        destinationContainer.classList.remove('hidden');
+                        baggagePicker.classList.add('hidden');
+                        searchFormContainer.classList.remove('flights-active');
+                        filterPanel.classList.add('hidden'); // Hide filters for other modes
+                        searchResultsList.innerHTML = `<p class="col-span-full text-center text-gray-600 text-lg py-10">Esta función (${newMode}) aún no está disponible.</p>`;
+                    }
+                });
+            });
+
+            // Price Range Slider Logic
+            priceRangeSlider.addEventListener('input', (e) => {
+                priceFilterValue = parseInt(e.target.value);
+                maxPriceDisplay.textContent = `€${priceFilterValue}${priceFilterValue === 1000 ? '+' : ''}`;
+                applyFilters(); // Apply filters dynamically as slider moves
+            });
+
+            // Star Rating Filter Logic and other checkbox filters
+            starFiltersContainer.addEventListener('change', applyFilters);
+            accommodationTypeFiltersContainer.addEventListener('change', applyFilters);
+            amenitiesFiltersContainer.addEventListener('change', applyFilters);
+
+            // Apply Filters Button (for mobile panel)
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', applyFilters);
+            }
+
+            // Reset Filters Button (for mobile panel)
+            if (resetFiltersPanelBtn) {
+                resetFiltersPanelBtn.addEventListener('click', resetAllFilters);
+            }
+
+            // Open Filters Button (for mobile)
+            if (openFiltersBtn) {
+                openFiltersBtn.addEventListener('click', () => toggleFilterPanel(true));
+            }
+
+            // Close Filters Button (for mobile panel)
+            if (closeFiltersBtn) {
+                closeFiltersBtn.addEventListener('click', () => toggleFilterPanel(false));
+            }
+
+            // Close filter panel when clicking overlay
+            if (filterOverlay) {
+                filterOverlay.addEventListener('click', () => toggleFilterPanel(false));
+            }
+
+            // Initial render
+            updateTravelersDisplay();
+            updateBaggageDisplay();
+            maxPriceDisplay.textContent = `€${priceRangeSlider.value}${priceRangeSlider.value === 1000 ? '+' : ''}`; // Set initial max price display
+            
+            // Ensure initial search mode UI is correct and render hotels
+            document.querySelector('.search-nav-button[data-mode="hotels"]').click(); // Activate hotels tab by default
+
+            // Pre-fill destination and trigger search on load to ensure cards are visible
+            destinationInput.value = 'Oviedo';
+            // Simulate a selection from suggestions to set IATA (optional, but good for realism)
+            destinationIataInput.value = 'OVD'; // Assuming Oviedo's IATA for the sample data
+            
+            // Set default dates for initial display if not already set by user
+            if (!selectedDeparture) {
+                const today = new Date();
+                const tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1);
+                selectedDeparture = today;
+                selectedReturn = tomorrow;
+                updateDateDisplay();
+            }
+
+            // Trigger the initial filter application to display hotel cards
+            applyFilters();
+            
+            // Hide the loader once everything is initialized
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.classList.add('hidden');
+                loader.addEventListener('transitionend', () => loader.remove());
+            }
+        });
+    </script>
+</body>
+</html>
